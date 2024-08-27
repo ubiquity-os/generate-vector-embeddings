@@ -37,7 +37,7 @@ export async function setupTests() {
     labels: [],
   });
 
-  createComment("/Hello", 1);
+  createComment("Hello, World!", 1);
 }
 
 export function createComment(comment: string, commentId: number) {

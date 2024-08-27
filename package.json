@@ -17,7 +17,7 @@
     "knip-ci": "knip --no-exit-code --reporter json --config .github/knip.ts",
     "prepare": "husky install",
     "test": "jest --setupFiles dotenv/config --coverage",
-    "worker": "wrangler dev --env dev --port 5000"
+    "worker": "wrangler dev --env dev --port 4000"
   },
   "keywords": [
     "typescript",
@@ -32,7 +32,6 @@
     "@octokit/rest": "20.1.1",
     "@octokit/webhooks": "13.2.7",
     "@sinclair/typebox": "0.32.33",
-    "@supabase/functions-js": "^2.4.3",
     "@supabase/supabase-js": "^2.45.2",
     "@ubiquity-dao/ubiquibot-logger": "^1.3.0",
     "dotenv": "16.4.5",

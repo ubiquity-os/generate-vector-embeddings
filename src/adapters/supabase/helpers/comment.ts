@@ -2,6 +2,12 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { SuperSupabase } from "./supabase";
 import { Context } from "../../../types/context";
 
+export interface CommentType {
+  id: number;
+  body: string;
+  embedding: number[];
+}
+
 export class Comment extends SuperSupabase {
   constructor(supabase: SupabaseClient, context: Context) {
     super(supabase, context);
@@ -36,6 +42,14 @@ export class Comment extends SuperSupabase {
     if (error) {
       this.context.logger.error("Error updating comment", error);
     }
+  }
+
+  async getComment(commentId: number): Promise<CommentType[] | null> {
+    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentId);
+    if (error) {
+      this.context.logger.error("Error getting comment", error);
+    }
+    return data;
   }
 
   async deleteComment(commentId: number) {

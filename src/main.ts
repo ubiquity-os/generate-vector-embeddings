@@ -16,7 +16,7 @@ export async function run() {
   if (!pluginSettingsValidator.test(settings)) {
     throw new Error("Invalid settings provided");
   }
-  console.log("ENV", payload);
+
   const inputs: PluginInputs = {
     stateId: payload.stateId,
     eventName: payload.eventName,
