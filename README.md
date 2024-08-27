@@ -1,4 +1,4 @@
-# `@ubiquibot/plugin-template`
+# `@ubiquibot/issue-comment-embeddings`
 
 ## Prerequisites
 
