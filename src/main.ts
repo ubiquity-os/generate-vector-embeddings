@@ -10,14 +10,13 @@ import { plugin } from "./plugin";
  */
 export async function run() {
   const payload = github.context.payload.inputs;
-
   const env = Value.Decode(envSchema, payload.env);
   const settings = Value.Decode(pluginSettingsSchema, Value.Default(pluginSettingsSchema, JSON.parse(payload.settings)));
 
   if (!pluginSettingsValidator.test(settings)) {
     throw new Error("Invalid settings provided");
   }
-
+  console.log("ENV", payload);
   const inputs: PluginInputs = {
     stateId: payload.stateId,
     eventName: payload.eventName,
