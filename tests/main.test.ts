@@ -1,3 +1,5 @@
+// cSpell:disable
+
 import { drop } from "@mswjs/data";
 import { db } from "./__mocks__/db";
 import { server } from "./__mocks__/node";
