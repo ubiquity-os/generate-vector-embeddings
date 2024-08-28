@@ -50,7 +50,8 @@ describe("Plugin tests", () => {
     await runPlugin(context);
     const supabase = context.adapters.supabase;
     try {
-      await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1);
+      const issueBody = context.payload.issue.body || "";
+      await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
@@ -59,32 +60,34 @@ describe("Plugin tests", () => {
     }
     const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
     expect(comment).toBeDefined();
-    expect(comment?.body).toBeDefined();
-    expect(comment?.body).toBe(STRINGS.HELLO_WORLD);
+    expect(comment?.commentbody).toBeDefined();
+    expect(comment?.commentbody).toBe(STRINGS.HELLO_WORLD);
   });
 
   it("When a comment is updated it should update the database", async () => {
     const { context } = createContext("Updated Message", 1, 1, 1, 1, "issue_comment.edited");
     const supabase = context.adapters.supabase;
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1);
+    const issueBody = context.payload.issue.body || "";
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
     await runPlugin(context);
     const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
     expect(comment).toBeDefined();
-    expect(comment?.body).toBeDefined();
-    expect(comment?.body).toBe("Updated Message");
+    expect(comment?.commentbody).toBeDefined();
+    expect(comment?.commentbody).toBe("Updated Message");
   });
 
   it("When a comment is deleted it should delete it from the database", async () => {
     const { context } = createContext("Text Message", 1, 1, 1, 1, "issue_comment.deleted");
     const supabase = context.adapters.supabase;
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1);
+    const issueBody = context.payload.issue.body || "";
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
     await runPlugin(context);
     try {
       await supabase.comment.getComment(1);
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
-        expect(error.message).toBe("Comment not found");
+        expect(error.message).toBe("Comment does not exist");
       }
     }
   });

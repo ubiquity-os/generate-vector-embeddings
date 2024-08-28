@@ -3,6 +3,7 @@ import { Env, PluginInputs } from "./types";
 import { Context } from "./types";
 import { isIssueCommentEvent } from "./types/typeguards";
 import { LogLevel, Logs } from "@ubiquity-dao/ubiquibot-logger";
+import { Database } from "./../database.types";
 import { createAdapters } from "./adapters";
 import { createClient } from "@supabase/supabase-js";
 import { addComments } from "./handlers/add-comments";
@@ -35,7 +36,7 @@ export async function runPlugin(context: Context) {
  */
 export async function plugin(inputs: PluginInputs, env: Env) {
   const octokit = new Octokit({ auth: inputs.authToken });
-  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_KEY);
+  const supabase = createClient<Database>(env.SUPABASE_URL, env.SUPABASE_KEY);
   const openaiClient = new OpenAI({
     apiKey: env.OPENAI_API_KEY,
   });

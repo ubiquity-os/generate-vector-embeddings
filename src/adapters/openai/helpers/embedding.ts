@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { Context } from "../../../types";
 import { SuperOpenAi } from "./openai";
-const VECTOR_SIZE = 512;
+const VECTOR_SIZE = 3072;
 
 export class Embedding extends SuperOpenAi {
   protected context: Context;
@@ -13,7 +13,7 @@ export class Embedding extends SuperOpenAi {
 
   async createEmbedding(text: string): Promise<number[]> {
     const params: OpenAI.EmbeddingCreateParams = {
-      model: "text-embedding-3-small",
+      model: "text-embedding-3-large",
       input: text,
       dimensions: VECTOR_SIZE,
     };

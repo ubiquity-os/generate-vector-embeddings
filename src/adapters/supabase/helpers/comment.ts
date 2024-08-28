@@ -13,7 +13,7 @@ export class Comment extends SuperSupabase {
     super(supabase, context);
   }
 
-  async createComment(commentBody: string, commentId: number) {
+  async createComment(commentBody: string, commentId: number, issueBody: string) {
     //First Check if the comment already exists
     const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentId);
     if (error) {
@@ -26,7 +26,9 @@ export class Comment extends SuperSupabase {
     } else {
       //Create the embedding for this comment
       const embedding = await this.context.adapters.openai.embedding.createEmbedding(commentBody);
-      const { error } = await this.supabase.from("issue_comments").insert([{ id: commentId, body: commentBody, embedding: embedding }]);
+      const { error } = await this.supabase
+        .from("issue_comments")
+        .insert([{ id: commentId, commentbody: commentBody, issuebody: issueBody, embedding: embedding }]);
       if (error) {
         this.context.logger.error("Error creating comment", error);
         return;
@@ -38,7 +40,7 @@ export class Comment extends SuperSupabase {
   async updateComment(commentBody: string, commentId: number) {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.openai.embedding.createEmbedding(commentBody));
-    const { error } = await this.supabase.from("issue_comments").update({ body: commentBody, embedding: embedding }).eq("id", commentId);
+    const { error } = await this.supabase.from("issue_comments").update({ commentbody: commentBody, embedding: embedding }).eq("id", commentId);
     if (error) {
       this.context.logger.error("Error updating comment", error);
     }
