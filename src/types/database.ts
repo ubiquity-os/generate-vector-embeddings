@@ -1,5 +1,3 @@
-// cSpell:disable
-
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
@@ -479,7 +477,7 @@ export type Database = {
         Args: {
           name: string;
         };
-        Returns: unknown;
+        Returns: string[];
       };
       get_size_by_bucket: {
         Args: Record<PropertyKey, never>;
