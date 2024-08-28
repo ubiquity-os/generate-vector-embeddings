@@ -3,7 +3,7 @@ import { Env, PluginInputs } from "./types";
 import { Context } from "./types";
 import { isIssueCommentEvent } from "./types/typeguards";
 import { LogLevel, Logs } from "@ubiquity-dao/ubiquibot-logger";
-import { Database } from "./../database.types";
+import { Database } from "./types/database";
 import { createAdapters } from "./adapters";
 import { createClient } from "@supabase/supabase-js";
 import { addComments } from "./handlers/add-comments";
@@ -24,9 +24,9 @@ export async function runPlugin(context: Context) {
         return await deleteComment(context);
       case "issue_comment.edited":
         return await updateComment(context);
-      default:
-        logger.error(`Unsupported event: ${eventName}`);
     }
+  } else {
+    logger.error(`Unsupported event: ${eventName}`);
   }
   logger.ok(`Exiting plugin`);
 }
