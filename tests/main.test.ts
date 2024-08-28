@@ -49,15 +49,14 @@ describe("Plugin tests", () => {
     const { context } = createContext();
     await runPlugin(context);
     const supabase = context.adapters.supabase;
-    supabase.comment
-      .createComment(STRINGS.HELLO_WORLD, 1)
-      .then(() => {
-        // This line should not be reached if the error is thrown
-        throw new Error("Expected method to reject.");
-      })
-      .catch((error) => {
-        expect(error).toThrowError("Comment already exists");
-      });
+    try {
+      await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1);
+      throw new Error("Expected method to reject.");
+    } catch (error) {
+      if (error instanceof Error) {
+        expect(error.message).toBe("Comment already exists");
+      }
+    }
     const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
     expect(comment).toBeDefined();
     expect(comment?.body).toBeDefined();
@@ -80,15 +79,14 @@ describe("Plugin tests", () => {
     const supabase = context.adapters.supabase;
     await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1);
     await runPlugin(context);
-    supabase.comment
-      .getComment(1)
-      .then(() => {
-        // This line should not be reached if the error is thrown
-        throw new Error("Expected method to reject.");
-      })
-      .catch((error) => {
-        expect(error).toThrowError("Comment does not exist");
-      });
+    try {
+      await supabase.comment.getComment(1);
+      throw new Error("Expected method to reject.");
+    } catch (error) {
+      if (error instanceof Error) {
+        expect(error.message).toBe("Comment not found");
+      }
+    }
   });
 });
 
