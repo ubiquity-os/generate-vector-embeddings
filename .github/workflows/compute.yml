@@ -1,4 +1,4 @@
-name: "the name of the plugin"
+name: "@ubiquibot/issue-comment-embeddings"
 
 on:
   workflow_dispatch:
@@ -18,12 +18,13 @@ on:
 
 jobs:
   compute:
-    name: "plugin name"
+    name: "Comment Embedding Store"
     runs-on: ubuntu-latest
     permissions: write-all
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +39,8 @@ jobs:
 
       - name: execute directive
         run: npx tsx ./src/main.ts
-        id: plugin-name
+        id: issue-comment-embeddings
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
