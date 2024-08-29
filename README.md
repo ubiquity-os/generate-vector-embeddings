@@ -18,7 +18,7 @@ To set up the `.dev.vars` file, you will need to provide the following variables
 
 ## Testing Locally
 - Run `yarn install` to install the dependencies.
-- Run `yarn dev` to start the server.
+- Run `yarn worker` to start the server.
 - Make HTTP requests to the server to test the plugin with content type `Application/JSON`
 ```
 {
