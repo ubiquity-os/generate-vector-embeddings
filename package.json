@@ -1,7 +1,7 @@
 {
   "name": "@ubiquibot/issue-comment-embeddings",
   "version": "1.0.0",
-  "description": "Worker plugin for generating vector embeddings of issue comments and storing them in a database",
+  "description": "Generates vector embeddings of GitHub comments and stores them in Supabase.",
   "author": "Ubiquity DAO",
   "license": "MIT",
   "main": "src/worker.ts",
