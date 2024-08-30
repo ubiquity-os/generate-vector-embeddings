@@ -1,7 +1,7 @@
 {
   "name": "@ubiquibot/issue-comment-embeddings",
   "version": "1.0.0",
-  "description": "Issue comment plugin for Ubiquibot.",
+  "description": "Worker plugin for generating vector embeddings of issue comments and storing them in a database",
   "author": "Ubiquity DAO",
   "license": "MIT",
   "main": "src/worker.ts",
@@ -14,7 +14,7 @@
     "format:prettier": "prettier --write .",
     "format:cspell": "cspell **/*",
     "knip": "knip --config .github/knip.ts",
-    "knip-ci": "",
+    "knip-ci": "knip --no-exit-code --reporter json --config .github/knip.ts",
     "prepare": "husky install",
     "test": "jest --setupFiles dotenv/config --coverage",
     "worker": "wrangler dev --env dev --port 4000",

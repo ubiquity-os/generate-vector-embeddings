@@ -4,5 +4,4 @@ compatibility_date = "2024-05-23"
 node_compat = true
 
 [env.dev]
-PLUGIN_CHAIN_STATE = "4f7aadc56bef41a7ae2cc8c0582320b3"
 [env.prod]
