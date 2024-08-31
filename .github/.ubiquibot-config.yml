@@ -1,6 +1,0 @@
-plugins:
-  - name: test-app
-    id: test-app
-    uses:
-      - plugin: https://ubiquibot-issue-comment-embeddings.sshivaditya.workers.dev
-        runsOn: [ "issue_comment.created", "issue_comment.edited", "issue_comment.deleted" ]

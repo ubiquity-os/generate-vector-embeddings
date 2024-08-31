@@ -1,4 +1,4 @@
-name: "@ubiquibot/issue-comment-embeddings"
+name: "@ubiquity-os/comment-vector-embeddings"
 
 on:
   workflow_dispatch:
