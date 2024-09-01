@@ -1,3 +1,5 @@
+// cSpell:disable
+
 import { drop } from "@mswjs/data";
 import { db } from "./__mocks__/db";
 import { server } from "./__mocks__/node";
@@ -11,9 +13,12 @@ import dotenv from "dotenv";
 import { Logs } from "@ubiquity-dao/ubiquibot-logger";
 import { Env } from "../src/types";
 import { runPlugin } from "../src/plugin";
+import { CommentMock, createMockAdapters } from "./__mocks__/adapter";
 
 dotenv.config();
 jest.requireActual("@octokit/rest");
+jest.requireActual("@supabase/supabase-js");
+jest.requireActual("openai");
 const octokit = new Octokit();
 
 beforeAll(() => {
@@ -33,55 +38,60 @@ describe("Plugin tests", () => {
 
   it("Should serve the manifest file", async () => {
     const worker = (await import("../src/worker")).default;
-    const response = await worker.fetch(new Request("http://localhost/manifest.json"), {});
+    const response = await worker.fetch(new Request("http://localhost/manifest.json"), {
+      SUPABASE_KEY: "test",
+      SUPABASE_URL: "test",
+      OPENAI_API_KEY: "test",
+    });
     const content = await response.json();
     expect(content).toEqual(manifest);
   });
 
-  it("Should handle an issue comment event", async () => {
-    const { context, infoSpy, errorSpy, debugSpy, okSpy, verboseSpy } = createContext();
-
-    expect(context.eventName).toBe("issue_comment.created");
-    expect(context.payload.comment.body).toBe("/Hello");
-
-    await runPlugin(context);
-
-    expect(errorSpy).not.toHaveBeenCalled();
-    expect(debugSpy).toHaveBeenNthCalledWith(1, STRINGS.EXECUTING_HELLO_WORLD, {
-      caller: STRINGS.CALLER_LOGS_ANON,
-      sender: STRINGS.USER_1,
-      repo: STRINGS.TEST_REPO,
-      issueNumber: 1,
-      owner: STRINGS.USER_1,
-    });
-    expect(infoSpy).toHaveBeenNthCalledWith(1, STRINGS.HELLO_WORLD);
-    expect(okSpy).toHaveBeenNthCalledWith(1, STRINGS.SUCCESSFULLY_CREATED_COMMENT);
-    expect(verboseSpy).toHaveBeenNthCalledWith(1, STRINGS.EXITING_HELLO_WORLD);
-  });
-
-  it("Should respond with `Hello, World!` in response to /Hello", async () => {
+  it("When a comment is created it should add it to the database", async () => {
     const { context } = createContext();
     await runPlugin(context);
-    const comments = db.issueComments.getAll();
-    expect(comments.length).toBe(2);
-    expect(comments[1].body).toBe(STRINGS.HELLO_WORLD);
+    const supabase = context.adapters.supabase;
+    try {
+      const issueBody = context.payload.issue.body || "";
+      await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
+      throw new Error("Expected method to reject.");
+    } catch (error) {
+      if (error instanceof Error) {
+        expect(error.message).toBe("Comment already exists");
+      }
+    }
+    const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
+    expect(comment).toBeDefined();
+    expect(comment?.commentbody).toBeDefined();
+    expect(comment?.commentbody).toBe(STRINGS.HELLO_WORLD);
   });
 
-  it("Should respond with `Hello, Code Reviewers` in response to /Hello", async () => {
-    const { context } = createContext(STRINGS.CONFIGURABLE_RESPONSE);
+  it("When a comment is updated it should update the database", async () => {
+    const { context } = createContext("Updated Message", 1, 1, 1, 1, "issue_comment.edited");
+    const supabase = context.adapters.supabase;
+    const issueBody = context.payload.issue.body || "";
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
     await runPlugin(context);
-    const comments = db.issueComments.getAll();
-    expect(comments.length).toBe(2);
-    expect(comments[1].body).toBe(STRINGS.CONFIGURABLE_RESPONSE);
+    const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
+    expect(comment).toBeDefined();
+    expect(comment?.commentbody).toBeDefined();
+    expect(comment?.commentbody).toBe("Updated Message");
   });
 
-  it("Should not respond to a comment that doesn't contain /Hello", async () => {
-    const { context, errorSpy } = createContext(STRINGS.CONFIGURABLE_RESPONSE, STRINGS.INVALID_COMMAND);
+  it("When a comment is deleted it should delete it from the database", async () => {
+    const { context } = createContext("Text Message", 1, 1, 1, 1, "issue_comment.deleted");
+    const supabase = context.adapters.supabase;
+    const issueBody = context.payload.issue.body || "";
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
     await runPlugin(context);
-    const comments = db.issueComments.getAll();
-
-    expect(comments.length).toBe(1);
-    expect(errorSpy).toHaveBeenNthCalledWith(1, STRINGS.INVALID_USE_OF_SLASH_COMMAND, { caller: STRINGS.CALLER_LOGS_ANON, body: STRINGS.INVALID_COMMAND });
+    try {
+      await supabase.comment.getComment(1);
+      throw new Error("Expected method to reject.");
+    } catch (error) {
+      if (error instanceof Error) {
+        expect(error.message).toBe("Comment does not exist");
+      }
+    }
   });
 });
 
@@ -94,12 +104,12 @@ describe("Plugin tests", () => {
  * Refactor according to your needs.
  */
 function createContext(
-  configurableResponse: string = "Hello, world!", // we pass the plugin configurable items here
-  commentBody: string = "/Hello",
+  commentBody: string = "Hello, world!",
   repoId: number = 1,
   payloadSenderId: number = 1,
   commentId: number = 1,
-  issueOne: number = 1
+  issueOne: number = 1,
+  eventName: Context["eventName"] = "issue_comment.created"
 ) {
   const repo = db.repo.findFirst({ where: { id: { equals: repoId } } }) as unknown as Context["payload"]["repository"];
   const sender = db.users.findFirst({ where: { id: { equals: payloadSenderId } } }) as unknown as Context["payload"]["sender"];
@@ -108,7 +118,8 @@ function createContext(
   createComment(commentBody, commentId); // create it first then pull it from the DB and feed it to _createContext
   const comment = db.issueComments.findFirst({ where: { id: { equals: commentId } } }) as unknown as Context["payload"]["comment"];
 
-  const context = createContextInner(repo, sender, issue1, comment, configurableResponse);
+  const context = createContextInner(repo, sender, issue1, comment, eventName);
+  context.adapters = createMockAdapters(context) as unknown as Context["adapters"];
   const infoSpy = jest.spyOn(context.logger, "info");
   const errorSpy = jest.spyOn(context.logger, "error");
   const debugSpy = jest.spyOn(context.logger, "debug");
@@ -137,10 +148,10 @@ function createContextInner(
   sender: Context["payload"]["sender"],
   issue: Context["payload"]["issue"],
   comment: Context["payload"]["comment"],
-  configurableResponse: string
+  eventName: Context["eventName"] = "issue_comment.created"
 ): Context {
   return {
-    eventName: "issue_comment.created",
+    eventName: eventName,
     payload: {
       action: "created",
       sender: sender,
@@ -149,11 +160,10 @@ function createContextInner(
       comment: comment,
       installation: { id: 1 } as Context["payload"]["installation"],
       organization: { login: STRINGS.USER_1 } as Context["payload"]["organization"],
-    },
+    } as Context["payload"],
+    config: {},
+    adapters: {} as Context["adapters"],
     logger: new Logs("debug"),
-    config: {
-      configurableResponse,
-    },
     env: {} as Env,
     octokit: octokit,
   };

@@ -2,20 +2,33 @@ import { Octokit } from "@octokit/rest";
 import { Env, PluginInputs } from "./types";
 import { Context } from "./types";
 import { isIssueCommentEvent } from "./types/typeguards";
-import { helloWorld } from "./handlers/hello-world";
 import { LogLevel, Logs } from "@ubiquity-dao/ubiquibot-logger";
+import { Database } from "./types/database";
+import { createAdapters } from "./adapters";
+import { createClient } from "@supabase/supabase-js";
+import { addComments } from "./handlers/add-comments";
+import { updateComment } from "./handlers/update-comments";
+import { deleteComment } from "./handlers/delete-comments";
+import OpenAI from "openai";
 
 /**
  * The main plugin function. Split for easier testing.
  */
 export async function runPlugin(context: Context) {
   const { logger, eventName } = context;
-
   if (isIssueCommentEvent(context)) {
-    return await helloWorld(context);
+    switch (eventName) {
+      case "issue_comment.created":
+        return await addComments(context);
+      case "issue_comment.deleted":
+        return await deleteComment(context);
+      case "issue_comment.edited":
+        return await updateComment(context);
+    }
+  } else {
+    logger.error(`Unsupported event: ${eventName}`);
   }
-
-  logger.error(`Unsupported event: ${eventName}`);
+  logger.ok(`Exiting plugin`);
 }
 
 /**
@@ -23,7 +36,10 @@ export async function runPlugin(context: Context) {
  */
 export async function plugin(inputs: PluginInputs, env: Env) {
   const octokit = new Octokit({ auth: inputs.authToken });
-
+  const supabase = createClient<Database>(env.SUPABASE_URL, env.SUPABASE_KEY);
+  const openaiClient = new OpenAI({
+    apiKey: env.OPENAI_API_KEY,
+  });
   const context: Context = {
     eventName: inputs.eventName,
     payload: inputs.eventPayload,
@@ -31,18 +47,8 @@ export async function plugin(inputs: PluginInputs, env: Env) {
     octokit,
     env,
     logger: new Logs("info" as LogLevel),
+    adapters: {} as ReturnType<typeof createAdapters>,
   };
-
-  /**
-   * NOTICE: Consider non-database storage solutions unless necessary
-   *
-   * Initialize storage adapters here. For example, to use Supabase:
-   *
-   * import { createClient } from "@supabase/supabase-js";
-   *
-   * const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_KEY);
-   * context.adapters = createAdapters(supabase, context);
-   */
-
+  context.adapters = createAdapters(supabase, openaiClient, context);
   return runPlugin(context);
 }

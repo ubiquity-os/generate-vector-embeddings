@@ -46,6 +46,16 @@ export const handlers = [
     db.issueComments.create(newItem);
     return HttpResponse.json(newItem);
   }),
+  // update comment
+  http.patch("https://api.github.com/repos/:owner/:repo/issues/comments/:comment_id", async ({ params: { comment_id: commentId }, request }) => {
+    const { body } = await getValue(request.body);
+    const item = db.issueComments.findFirst({ where: { id: { equals: Number(commentId) } } });
+    if (!item) {
+      return new HttpResponse(null, { status: 404 });
+    }
+    item.body = body;
+    return HttpResponse.json(item);
+  }),
 ];
 
 async function getValue(body: ReadableStream<Uint8Array> | null) {
