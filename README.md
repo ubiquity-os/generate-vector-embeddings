@@ -10,7 +10,7 @@ To set up the `.dev.vars` file, you will need to provide the following variables
 - `OPENAI_API_KEY`: The API key for OpenAI.
 
 ## Usage
-- Add the following to your `.ubiquibot.config.yml` file with the appropriate URL:
+- Add the following to your `.ubiquibot-config.yml` file with the appropriate URL:
 ```javascript
   -plugin: http://127.0.0.1:4000
       runsOn: [ "issue_comment.created", "issue_comment.edited", "issue_comment.deleted" ]
