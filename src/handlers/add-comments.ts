@@ -6,20 +6,14 @@ export async function addComments(context: Context) {
     payload,
     adapters: { supabase },
   } = context;
-
-  const sender = payload.comment.user?.login;
-  const repo = payload.repository.name;
-  const issueNumber = payload.issue.number;
-  const issueBody = payload.issue.body || "";
-  const owner = payload.repository.owner.login;
-  const body = payload.comment.body;
-
-  // Log the payload
-  logger.info(`Executing addComments:`, { sender, repo, issueNumber, owner });
+  const plaintext = payload.comment.body;
+  const authorId = payload.comment.user?.id || 0;
+  const nodeId = payload.comment.node_id;
+  const isPrivate = payload.repository.private;
 
   // Add the comment to the database
   try {
-    await supabase.comment.createComment(body, payload.comment.id, issueBody);
+    await supabase.comment.createComment(plaintext, nodeId, authorId, isPrivate);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error creating comment:`, { error: error, stack: error.stack });

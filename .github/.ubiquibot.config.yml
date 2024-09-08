@@ -1,0 +1,2 @@
+-plugin: http://127.0.0.1:5000
+      runsOn: [ "issue_comment.created", "issue_comment.edited", "issue_comment.deleted" ]

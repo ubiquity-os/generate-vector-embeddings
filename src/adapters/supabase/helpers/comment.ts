@@ -3,8 +3,11 @@ import { SuperSupabase } from "./supabase";
 import { Context } from "../../../types/context";
 
 export interface CommentType {
-  id: number;
-  body: string;
+  id: string;
+  plaintext: string;
+  author_id: number;
+  created_at: string;
+  modified_at: string;
   embedding: number[];
 }
 
@@ -13,9 +16,9 @@ export class Comment extends SuperSupabase {
     super(supabase, context);
   }
 
-  async createComment(commentBody: string, commentId: number, issueBody: string) {
+  async createComment(plaintext: string, commentNodeId: string, authorId: number, isPrivate: boolean) {
     //First Check if the comment already exists
-    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentId);
+    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error creating comment", error);
       return;
@@ -25,10 +28,11 @@ export class Comment extends SuperSupabase {
       return;
     } else {
       //Create the embedding for this comment
-      const embedding = await this.context.adapters.openai.embedding.createEmbedding(commentBody);
-      const { error } = await this.supabase
-        .from("issue_comments")
-        .insert([{ id: commentId, commentbody: commentBody, issuebody: issueBody, embedding: embedding }]);
+      const embedding = await this.context.adapters.openai.embedding.createEmbedding(plaintext);
+      if (isPrivate) {
+        plaintext = "CENSORED";
+      }
+      const { error } = await this.supabase.from("issue_comments").insert([{ id: commentNodeId, plaintext, author_id: authorId, embedding: embedding }]);
       if (error) {
         this.context.logger.error("Error creating comment", error);
         return;
@@ -37,25 +41,28 @@ export class Comment extends SuperSupabase {
     this.context.logger.info("Comment created successfully");
   }
 
-  async updateComment(commentBody: string, commentId: number) {
+  async updateComment(plaintext: string, commentNodeId: string, isPrivate: boolean) {
     //Create the embedding for this comment
-    const embedding = Array.from(await this.context.adapters.openai.embedding.createEmbedding(commentBody));
-    const { error } = await this.supabase.from("issue_comments").update({ commentbody: commentBody, embedding: embedding }).eq("id", commentId);
+    const embedding = Array.from(await this.context.adapters.openai.embedding.createEmbedding(plaintext));
+    if (isPrivate) {
+      plaintext = "CENSORED";
+    }
+    const { error } = await this.supabase.from("issue_comments").update({ plaintext, embedding: embedding, modified_at: new Date() }).eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error updating comment", error);
     }
   }
 
-  async getComment(commentId: number): Promise<CommentType[] | null> {
-    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentId);
+  async getComment(commentNodeId: string): Promise<CommentType[] | null> {
+    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error getting comment", error);
     }
     return data;
   }
 
-  async deleteComment(commentId: number) {
-    const { error } = await this.supabase.from("issue_comments").delete().eq("id", commentId);
+  async deleteComment(commentNodeId: string) {
+    const { error } = await this.supabase.from("issue_comments").delete().eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error deleting comment", error);
     }
