@@ -1,2 +1,6 @@
--plugin: https://ubiquity-os-comment-vector-embeddings.sshivaditya.workers.dev/
-      runsOn: [ "issue_comment.created", "issue_comment.edited", "issue_comment.deleted" ]
+plugins:
+  - name: test-app
+    id: test-app
+    uses:
+      - plugin: https://ubiquity-os-comment-vector-embeddings.sshivaditya.workers.dev/
+        runsOn: [ "issue_comment.created", "issue_comment.edited", "issue_comment.deleted" ]
