@@ -11,15 +11,19 @@ export class Embedding extends SuperOpenAi {
     this.context = context;
   }
 
-  async createEmbedding(text: string): Promise<number[]> {
-    const params: OpenAI.EmbeddingCreateParams = {
-      model: "text-embedding-3-large",
-      input: text,
-      dimensions: VECTOR_SIZE,
-    };
-    const response = await this.client.embeddings.create({
-      ...params,
-    });
-    return response.data[0]?.embedding;
+  async createEmbedding(text: string | null): Promise<number[]> {
+    if (text === null) {
+      return new Array(VECTOR_SIZE).fill(0);
+    } else {
+      const params: OpenAI.EmbeddingCreateParams = {
+        model: "text-embedding-3-large",
+        input: text,
+        dimensions: VECTOR_SIZE,
+      };
+      const response = await this.client.embeddings.create({
+        ...params,
+      });
+      return response.data[0]?.embedding;
+    }
   }
 }

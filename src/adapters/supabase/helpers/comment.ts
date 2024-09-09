@@ -4,7 +4,7 @@ import { Context } from "../../../types/context";
 
 export interface CommentType {
   id: string;
-  plaintext: string;
+  plaintext?: string;
   author_id: number;
   created_at: string;
   modified_at: string;
@@ -30,7 +30,7 @@ export class Comment extends SuperSupabase {
       //Create the embedding for this comment
       const embedding = await this.context.adapters.openai.embedding.createEmbedding(plaintext);
       if (isPrivate) {
-        plaintext = "CENSORED";
+        plaintext = null;
       }
       const { error } = await this.supabase.from("issue_comments").insert([{ id: commentNodeId, plaintext, author_id: authorId, embedding: embedding }]);
       if (error) {
@@ -45,7 +45,7 @@ export class Comment extends SuperSupabase {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.openai.embedding.createEmbedding(plaintext));
     if (isPrivate) {
-      plaintext = "CENSORED";
+      plaintext = null;
     }
     const { error } = await this.supabase.from("issue_comments").update({ plaintext, embedding: embedding, modified_at: new Date() }).eq("id", commentNodeId);
     if (error) {

@@ -35,7 +35,7 @@ export type Database = {
           embedding: string;
           id: string;
           modified_at: string;
-          plaintext: string;
+          plaintext: string | null;
         };
         Insert: {
           author_id: string;
@@ -43,7 +43,7 @@ export type Database = {
           embedding: string;
           id: string;
           modified_at?: string;
-          plaintext: string;
+          plaintext?: string | null;
         };
         Update: {
           author_id?: string;
@@ -51,7 +51,7 @@ export type Database = {
           embedding?: string;
           id?: string;
           modified_at?: string;
-          plaintext?: string;
+          plaintext?: string | null;
         };
         Relationships: [];
       };

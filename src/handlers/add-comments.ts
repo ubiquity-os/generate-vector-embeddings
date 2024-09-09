@@ -7,7 +7,7 @@ export async function addComments(context: Context) {
     adapters: { supabase },
   } = context;
   const plaintext = payload.comment.body;
-  const authorId = payload.comment.user?.id || 0;
+  const authorId = payload.comment.user?.id || -1;
   const nodeId = payload.comment.node_id;
   const isPrivate = payload.repository.private;
 

@@ -15,5 +15,4 @@ export const STRINGS = {
   CONFIGURABLE_RESPONSE: "Hello, Code Reviewers!",
   INVALID_COMMAND: "/Goodbye",
   COMMENT_DOES_NOT_EXIST: "Comment does not exist",
-  CENSORED: "[CENSORED]",
 };
