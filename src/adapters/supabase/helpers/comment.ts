@@ -16,7 +16,7 @@ export class Comment extends SuperSupabase {
     super(supabase, context);
   }
 
-  async createComment(plaintext: string, commentNodeId: string, authorId: number, isPrivate: boolean) {
+  async createComment(plaintext: string | null, commentNodeId: string, authorId: number, isPrivate: boolean) {
     //First Check if the comment already exists
     const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
@@ -30,7 +30,7 @@ export class Comment extends SuperSupabase {
       //Create the embedding for this comment
       const embedding = await this.context.adapters.openai.embedding.createEmbedding(plaintext);
       if (isPrivate) {
-        plaintext = null;
+        plaintext = null as string | null;
       }
       const { error } = await this.supabase.from("issue_comments").insert([{ id: commentNodeId, plaintext, author_id: authorId, embedding: embedding }]);
       if (error) {
@@ -41,11 +41,11 @@ export class Comment extends SuperSupabase {
     this.context.logger.info("Comment created successfully");
   }
 
-  async updateComment(plaintext: string, commentNodeId: string, isPrivate: boolean) {
+  async updateComment(plaintext: string | null, commentNodeId: string, isPrivate: boolean) {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.openai.embedding.createEmbedding(plaintext));
     if (isPrivate) {
-      plaintext = null;
+      plaintext = null as string | null;
     }
     const { error } = await this.supabase.from("issue_comments").update({ plaintext, embedding: embedding, modified_at: new Date() }).eq("id", commentNodeId);
     if (error) {
