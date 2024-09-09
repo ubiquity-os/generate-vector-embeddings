@@ -7,18 +7,12 @@ export async function updateComment(context: Context) {
     adapters: { supabase },
   } = context;
 
-  const sender = payload.comment.user?.login;
-  const repo = payload.repository.name;
-  const issueNumber = payload.issue.number;
-  const owner = payload.repository.owner.login;
-  const body = payload.comment.body;
-
-  // Log the payload
-  logger.debug(`Executing updateComment:`, { sender, repo, issueNumber, owner });
-
+  const nodeId = payload.comment.node_id;
+  const isPrivate = payload.repository.private;
+  const plaintext = payload.comment.body;
   // Fetch the previous comment and update it in the db
   try {
-    await supabase.comment.updateComment(body, payload.comment.id);
+    await supabase.comment.updateComment(plaintext, nodeId, isPrivate);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error updating comment:`, { error: error, stack: error.stack });

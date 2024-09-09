@@ -48,44 +48,41 @@ describe("Plugin tests", () => {
   });
 
   it("When a comment is created it should add it to the database", async () => {
-    const { context } = createContext();
+    const { context } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "sasasCreate");
     await runPlugin(context);
     const supabase = context.adapters.supabase;
     try {
-      const issueBody = context.payload.issue.body || "";
-      await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
+      await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasCreate", 1, false);
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
         expect(error.message).toBe("Comment already exists");
       }
     }
-    const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
+    const comment = (await supabase.comment.getComment("sasasCreate")) as unknown as CommentMock;
     expect(comment).toBeDefined();
-    expect(comment?.commentbody).toBeDefined();
-    expect(comment?.commentbody).toBe(STRINGS.HELLO_WORLD);
+    expect(comment?.plaintext).toBeDefined();
+    expect(comment?.plaintext).toBe(STRINGS.HELLO_WORLD);
   });
 
   it("When a comment is updated it should update the database", async () => {
-    const { context } = createContext("Updated Message", 1, 1, 1, 1, "issue_comment.edited");
+    const { context } = createContext("Updated Message", 1, 1, 1, 1, "sasasUpdate", "issue_comment.edited");
     const supabase = context.adapters.supabase;
-    const issueBody = context.payload.issue.body || "";
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasUpdate", 1, false);
     await runPlugin(context);
-    const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
+    const comment = (await supabase.comment.getComment("sasasUpdate")) as unknown as CommentMock;
     expect(comment).toBeDefined();
-    expect(comment?.commentbody).toBeDefined();
-    expect(comment?.commentbody).toBe("Updated Message");
+    expect(comment?.plaintext).toBeDefined();
+    expect(comment?.plaintext).toBe("Updated Message");
   });
 
   it("When a comment is deleted it should delete it from the database", async () => {
-    const { context } = createContext("Text Message", 1, 1, 1, 1, "issue_comment.deleted");
+    const { context } = createContext("Text Message", 1, 1, 1, 1, "sasasDelete", "issue_comment.deleted");
     const supabase = context.adapters.supabase;
-    const issueBody = context.payload.issue.body || "";
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasDelete", 1, false);
     await runPlugin(context);
     try {
-      await supabase.comment.getComment(1);
+      await supabase.comment.getComment("sasasDelete");
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
@@ -109,13 +106,14 @@ function createContext(
   payloadSenderId: number = 1,
   commentId: number = 1,
   issueOne: number = 1,
+  nodeId: string = "sasas",
   eventName: Context["eventName"] = "issue_comment.created"
 ) {
   const repo = db.repo.findFirst({ where: { id: { equals: repoId } } }) as unknown as Context["payload"]["repository"];
   const sender = db.users.findFirst({ where: { id: { equals: payloadSenderId } } }) as unknown as Context["payload"]["sender"];
   const issue1 = db.issue.findFirst({ where: { id: { equals: issueOne } } }) as unknown as Context["payload"]["issue"];
 
-  createComment(commentBody, commentId); // create it first then pull it from the DB and feed it to _createContext
+  createComment(commentBody, commentId, nodeId); // create it first then pull it from the DB and feed it to _createContext
   const comment = db.issueComments.findFirst({ where: { id: { equals: commentId } } }) as unknown as Context["payload"]["comment"];
 
   const context = createContextInner(repo, sender, issue1, comment, eventName);

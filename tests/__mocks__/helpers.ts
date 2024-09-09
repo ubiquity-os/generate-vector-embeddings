@@ -38,7 +38,7 @@ export async function setupTests() {
   });
 }
 
-export function createComment(comment: string, commentId: number) {
+export function createComment(comment: string, commentId: number, nodeId: string) {
   const isComment = db.issueComments.findFirst({
     where: {
       id: {
@@ -63,6 +63,7 @@ export function createComment(comment: string, commentId: number) {
       id: commentId,
       body: comment,
       issue_number: 1,
+      node_id: nodeId,
       user: {
         login: STRINGS.USER_1,
         id: 1,

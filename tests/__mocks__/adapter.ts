@@ -4,47 +4,51 @@ import { Embedding } from "../../src/adapters/openai/helpers/embedding";
 import { STRINGS } from "./strings";
 
 export interface CommentMock {
-  id: number;
-  commentbody: string;
-  issuebody: string;
+  id: string;
+  plaintext: string;
+  author_id: number;
   embedding: number[];
 }
 
 export function createMockAdapters(context: Context) {
-  const commentMap: Map<number, CommentMock> = new Map();
+  const commentMap: Map<string, CommentMock> = new Map();
   return {
     supabase: {
       comment: {
-        createComment: jest.fn(async (commentBody: string, commentId: number, issueBody: string) => {
-          if (commentMap.has(commentId)) {
+        createComment: jest.fn(async (plaintext: string, commentNodeId: string, authorId: number) => {
+          if (commentMap.has(commentNodeId)) {
             throw new Error("Comment already exists");
           }
-          const embedding = await context.adapters.openai.embedding.createEmbedding(commentBody);
-          commentMap.set(commentId, { id: commentId, commentbody: commentBody, issuebody: issueBody, embedding });
+          const embedding = await context.adapters.openai.embedding.createEmbedding(plaintext);
+          commentMap.set(commentNodeId, { id: commentNodeId, plaintext, author_id: authorId, embedding });
         }),
-        updateComment: jest.fn(async (commentBody: string, commentId: number) => {
-          if (!commentMap.has(commentId)) {
+        updateComment: jest.fn(async (plaintext: string, commentNodeId: string, isPrivate: boolean) => {
+          console.log(commentMap);
+          if (!commentMap.has(commentNodeId)) {
             throw new Error(STRINGS.COMMENT_DOES_NOT_EXIST);
           }
-          const originalComment = commentMap.get(commentId);
+          const originalComment = commentMap.get(commentNodeId);
           if (!originalComment) {
             throw new Error(STRINGS.COMMENT_DOES_NOT_EXIST);
           }
-          const { id, issuebody } = originalComment;
-          const embedding = await context.adapters.openai.embedding.createEmbedding(commentBody);
-          commentMap.set(commentId, { id, commentbody: commentBody, issuebody, embedding });
+          const { id, author_id } = originalComment;
+          const embedding = await context.adapters.openai.embedding.createEmbedding(plaintext);
+          if (isPrivate) {
+            plaintext = STRINGS.CENSORED;
+          }
+          commentMap.set(commentNodeId, { id, plaintext, author_id, embedding });
         }),
-        deleteComment: jest.fn(async (commentId: number) => {
-          if (!commentMap.has(commentId)) {
+        deleteComment: jest.fn(async (commentNodeId: string) => {
+          if (!commentMap.has(commentNodeId)) {
             throw new Error(STRINGS.COMMENT_DOES_NOT_EXIST);
           }
-          commentMap.delete(commentId);
+          commentMap.delete(commentNodeId);
         }),
-        getComment: jest.fn(async (commentId: number) => {
-          if (!commentMap.has(commentId)) {
+        getComment: jest.fn(async (commentNodeId: string) => {
+          if (!commentMap.has(commentNodeId)) {
             throw new Error(STRINGS.COMMENT_DOES_NOT_EXIST);
           }
-          return commentMap.get(commentId);
+          return commentMap.get(commentNodeId);
         }),
       } as unknown as Comment,
     },

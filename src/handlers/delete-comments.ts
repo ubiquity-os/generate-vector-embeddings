@@ -7,17 +7,10 @@ export async function deleteComment(context: Context) {
     adapters: { supabase },
   } = context;
 
-  const sender = payload.comment.user?.login;
-  const repo = payload.repository.name;
-  const issueNumber = payload.issue.number;
-  const owner = payload.repository.owner.login;
+  const nodeId = payload.comment.node_id;
 
-  // Log the payload
-  logger.debug(`Executing deleteComment:`, { sender, repo, issueNumber, owner });
-
-  // Add the comment to the database
   try {
-    await supabase.comment.deleteComment(payload.comment.id);
+    await supabase.comment.deleteComment(nodeId);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error deleting comment:`, { error: error, stack: error.stack });

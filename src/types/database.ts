@@ -30,22 +30,28 @@ export type Database = {
     Tables: {
       issue_comments: {
         Row: {
-          commentbody: string;
+          author_id: string;
+          created_at: string;
           embedding: string;
-          id: number;
-          issuebody: string | null;
+          id: string;
+          modified_at: string;
+          plaintext: string;
         };
         Insert: {
-          commentbody: string;
+          author_id: string;
+          created_at?: string;
           embedding: string;
-          id: number;
-          issuebody?: string | null;
+          id: string;
+          modified_at?: string;
+          plaintext: string;
         };
         Update: {
-          commentbody?: string;
+          author_id?: string;
+          created_at?: string;
           embedding?: string;
-          id?: number;
-          issuebody?: string | null;
+          id?: string;
+          modified_at?: string;
+          plaintext?: string;
         };
         Relationships: [];
       };

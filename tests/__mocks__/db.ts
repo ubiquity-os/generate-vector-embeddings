@@ -75,6 +75,7 @@ export const db = factory({
     body: String,
     created_at: Date,
     updated_at: Date,
+    node_id: String,
     issue_number: Number,
     user: {
       login: String,
