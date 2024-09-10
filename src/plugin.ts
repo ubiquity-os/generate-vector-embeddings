@@ -10,6 +10,7 @@ import { addComments } from "./handlers/add-comments";
 import { updateComment } from "./handlers/update-comments";
 import { deleteComment } from "./handlers/delete-comments";
 import OpenAI from "openai";
+import { VoyageAIClient } from "voyageai";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -40,6 +41,9 @@ export async function plugin(inputs: PluginInputs, env: Env) {
   const openaiClient = new OpenAI({
     apiKey: env.OPENAI_API_KEY,
   });
+  const voyageClient = new VoyageAIClient({
+    apiKey: env.VOYAGE_API_KEY,
+  });
   const context: Context = {
     eventName: inputs.eventName,
     payload: inputs.eventPayload,
@@ -49,6 +53,6 @@ export async function plugin(inputs: PluginInputs, env: Env) {
     logger: new Logs("info" as LogLevel),
     adapters: {} as ReturnType<typeof createAdapters>,
   };
-  context.adapters = createAdapters(supabase, openaiClient, context);
+  context.adapters = createAdapters(supabase, openaiClient, voyageClient, context);
   return runPlugin(context);
 }

@@ -42,6 +42,7 @@ describe("Plugin tests", () => {
       SUPABASE_KEY: "test",
       SUPABASE_URL: "test",
       OPENAI_API_KEY: "test",
+      VOYAGE_API_KEY: "test",
     });
     const content = await response.json();
     expect(content).toEqual(manifest);
