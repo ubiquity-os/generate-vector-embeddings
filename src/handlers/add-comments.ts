@@ -13,7 +13,6 @@ export async function addComments(context: Context) {
   const nodeId = payload.comment.node_id;
   const isPrivate = payload.repository.private;
 
-  // Add the comment to the database
   try {
     await supabase.comment.createComment(plaintext, nodeId, authorId, commentObject, isPrivate);
   } catch (error) {
