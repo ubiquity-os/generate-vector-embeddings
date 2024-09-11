@@ -16,7 +16,7 @@ export class Comment extends SuperSupabase {
     super(supabase, context);
   }
 
-  async createComment(plaintext: string | null, commentNodeId: string, authorId: number, isPrivate: boolean) {
+  async createComment(plaintext: string | null, commentNodeId: string, authorId: number, commentobject: JSON | null, isPrivate: boolean) {
     //First Check if the comment already exists
     const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
@@ -36,7 +36,9 @@ export class Comment extends SuperSupabase {
       if (isPrivate) {
         plaintext = null as string | null;
       }
-      const { error } = await this.supabase.from("issue_comments").insert([{ id: commentNodeId, plaintext, author_id: authorId, embedding: embedding }]);
+      const { error } = await this.supabase
+        .from("issue_comments")
+        .insert([{ id: commentNodeId, plaintext, author_id: authorId, commentobject, embedding: embedding }]);
       if (error) {
         this.context.logger.error("Error creating comment", error);
         return;
@@ -45,7 +47,7 @@ export class Comment extends SuperSupabase {
     this.context.logger.info("Comment created successfully");
   }
 
-  async updateComment(plaintext: string | null, commentNodeId: string, isPrivate: boolean) {
+  async updateComment(plaintext: string | null, commentNodeId: string, commentobject: JSON, isPrivate: boolean) {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(plaintext));
     if (embedding.length < 3072) {
@@ -54,7 +56,10 @@ export class Comment extends SuperSupabase {
     if (isPrivate) {
       plaintext = null as string | null;
     }
-    const { error } = await this.supabase.from("issue_comments").update({ plaintext, embedding: embedding, modified_at: new Date() }).eq("id", commentNodeId);
+    const { error } = await this.supabase
+      .from("issue_comments")
+      .update({ plaintext, embedding: embedding, commentobject, modified_at: new Date() })
+      .eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error updating comment", error);
     }

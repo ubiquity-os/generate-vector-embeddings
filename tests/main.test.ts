@@ -14,6 +14,7 @@ import { Logs } from "@ubiquity-dao/ubiquibot-logger";
 import { Env } from "../src/types";
 import { runPlugin } from "../src/plugin";
 import { CommentMock, createMockAdapters } from "./__mocks__/adapter";
+import { cleanCommentObject } from "../src/adapters/utils/cleancommentobject";
 
 dotenv.config();
 jest.requireActual("@octokit/rest");
@@ -42,7 +43,7 @@ describe("Plugin tests", () => {
       SUPABASE_KEY: "test",
       SUPABASE_URL: "test",
       OPENAI_API_KEY: "test",
-      VOYAGE_API_KEY: "test",
+      VOYAGEAI_API_KEY: "test",
     });
     const content = await response.json();
     expect(content).toEqual(manifest);
@@ -52,8 +53,9 @@ describe("Plugin tests", () => {
     const { context } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "sasasCreate");
     await runPlugin(context);
     const supabase = context.adapters.supabase;
+    const commentObject = cleanCommentObject(context.payload);
     try {
-      await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasCreate", 1, false);
+      await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasCreate", 1, commentObject, false);
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
@@ -69,7 +71,8 @@ describe("Plugin tests", () => {
   it("When a comment is updated it should update the database", async () => {
     const { context } = createContext("Updated Message", 1, 1, 1, 1, "sasasUpdate", "issue_comment.edited");
     const supabase = context.adapters.supabase;
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasUpdate", 1, false);
+    const commentObject = cleanCommentObject(context.payload);
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasUpdate", 1, commentObject, false);
     await runPlugin(context);
     const comment = (await supabase.comment.getComment("sasasUpdate")) as unknown as CommentMock;
     expect(comment).toBeDefined();
@@ -80,7 +83,8 @@ describe("Plugin tests", () => {
   it("When a comment is deleted it should delete it from the database", async () => {
     const { context } = createContext("Text Message", 1, 1, 1, 1, "sasasDelete", "issue_comment.deleted");
     const supabase = context.adapters.supabase;
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasDelete", 1, false);
+    const commentObject = cleanCommentObject(context.payload);
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasDelete", 1, commentObject, false);
     await runPlugin(context);
     try {
       await supabase.comment.getComment("sasasDelete");

@@ -1,3 +1,4 @@
+import { cleanCommentObject } from "../adapters/utils/cleancommentobject";
 import { Context } from "../types";
 
 export async function addComments(context: Context) {
@@ -6,6 +7,7 @@ export async function addComments(context: Context) {
     payload,
     adapters: { supabase },
   } = context;
+  const commentobject = cleanCommentObject(payload);
   const plaintext = payload.comment.body;
   const authorId = payload.comment.user?.id || -1;
   const nodeId = payload.comment.node_id;
@@ -13,7 +15,7 @@ export async function addComments(context: Context) {
 
   // Add the comment to the database
   try {
-    await supabase.comment.createComment(plaintext, nodeId, authorId, isPrivate);
+    await supabase.comment.createComment(plaintext, nodeId, authorId, commentobject as JSON, isPrivate);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error creating comment:`, { error: error, stack: error.stack });

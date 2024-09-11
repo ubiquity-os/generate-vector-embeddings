@@ -42,7 +42,7 @@ export async function plugin(inputs: PluginInputs, env: Env) {
     apiKey: env.OPENAI_API_KEY,
   });
   const voyageClient = new VoyageAIClient({
-    apiKey: env.VOYAGE_API_KEY,
+    apiKey: env.VOYAGEAI_API_KEY,
   });
   const context: Context = {
     eventName: inputs.eventName,
