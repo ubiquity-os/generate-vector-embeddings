@@ -35,6 +35,7 @@ export class Comment extends SuperSupabase {
       }
       if (isPrivate) {
         plaintext = null as string | null;
+        commentobject = null as JSON | null;
       }
       const { error } = await this.supabase
         .from("issue_comments")
@@ -47,7 +48,7 @@ export class Comment extends SuperSupabase {
     this.context.logger.info("Comment created successfully");
   }
 
-  async updateComment(plaintext: string | null, commentNodeId: string, commentobject: JSON, isPrivate: boolean) {
+  async updateComment(plaintext: string | null, commentNodeId: string, commentobject: JSON | null, isPrivate: boolean) {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(plaintext));
     if (embedding.length < 3072) {
@@ -55,6 +56,7 @@ export class Comment extends SuperSupabase {
     }
     if (isPrivate) {
       plaintext = null as string | null;
+      commentobject = null as JSON | null;
     }
     const { error } = await this.supabase
       .from("issue_comments")
