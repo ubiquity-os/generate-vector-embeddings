@@ -7,7 +7,6 @@ This is a plugin for [Ubiquibot](https://github.com/ubiquity/ubiquibot-kernel). 
 To set up the `.dev.vars` file, you will need to provide the following variables:
 - `SUPABASE_URL`: The URL for your Supabase instance.
 - `SUPABASE_KEY`: The key for your Supabase instance.
-- `OPENAI_API_KEY`: The API key for OpenAI.
 - `VOYAGEAI_API_KEY`: The API key for Voyage.
 
 ## Usage

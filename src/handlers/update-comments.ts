@@ -1,4 +1,4 @@
-import { cleanCommentObject } from "../adapters/utils/cleancommentobject";
+import { cleanCommentObject } from "../adapters/utils/cleanCommentObject";
 import { Context } from "../types";
 
 export async function updateComment(context: Context) {
@@ -7,13 +7,13 @@ export async function updateComment(context: Context) {
     payload,
     adapters: { supabase },
   } = context;
-  const commentobject = cleanCommentObject(payload);
+  const commentObject = cleanCommentObject(payload);
   const nodeId = payload.comment.node_id;
   const isPrivate = payload.repository.private;
   const plaintext = payload.comment.body;
   // Fetch the previous comment and update it in the db
   try {
-    await supabase.comment.updateComment(plaintext, nodeId, commentobject, isPrivate);
+    await supabase.comment.updateComment(plaintext, nodeId, commentObject, isPrivate);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error updating comment:`, { error: error, stack: error.stack });

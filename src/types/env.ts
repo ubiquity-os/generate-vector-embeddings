@@ -13,7 +13,6 @@ import { StandardValidator } from "typebox-validators";
 export const envSchema = T.Object({
   SUPABASE_URL: T.String(),
   SUPABASE_KEY: T.String(),
-  OPENAI_API_KEY: T.String(),
   VOYAGEAI_API_KEY: T.String(),
 });
 

@@ -1,13 +1,12 @@
 import { Context } from "../../src/types";
 import { Comment } from "../../src/adapters/supabase/helpers/comment";
-import { Embedding } from "../../src/adapters/openai/helpers/embedding";
 import { STRINGS } from "./strings";
 
 export interface CommentMock {
   id: string;
   plaintext: string | null;
   author_id: number;
-  commentobject?: Record<string, unknown> | null;
+  commentObject?: Record<string, unknown> | null;
   embedding: number[];
 }
 
@@ -21,7 +20,7 @@ export function createMockAdapters(context: Context) {
             if (commentMap.has(commentNodeId)) {
               throw new Error("Comment already exists");
             }
-            const embedding = await context.adapters.openai.embedding.createEmbedding(plaintext);
+            const embedding = await context.adapters.voyage.embedding.createEmbedding(plaintext);
             if (isPrivate) {
               plaintext = null;
             }
@@ -37,7 +36,7 @@ export function createMockAdapters(context: Context) {
             throw new Error(STRINGS.COMMENT_DOES_NOT_EXIST);
           }
           const { id, author_id } = originalComment;
-          const embedding = await context.adapters.openai.embedding.createEmbedding(plaintext);
+          const embedding = await context.adapters.voyage.embedding.createEmbedding(plaintext);
           if (isPrivate) {
             plaintext = null;
           }
@@ -57,7 +56,7 @@ export function createMockAdapters(context: Context) {
         }),
       } as unknown as Comment,
     },
-    openai: {
+    voyage: {
       embedding: {
         createEmbedding: jest.fn(async (text: string) => {
           if (text && text.length > 0) {
@@ -65,7 +64,7 @@ export function createMockAdapters(context: Context) {
           }
           return new Array(3072).fill(0);
         }),
-      } as unknown as Embedding,
+      } as unknown as number[],
     },
   };
 }

@@ -1,2 +1,2 @@
 ALTER TABLE issue_comments
-ADD COLUMN commentobject jsonb;
+ADD COLUMN commentObject jsonb;

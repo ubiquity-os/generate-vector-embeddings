@@ -18,7 +18,6 @@ import { CommentMock, createMockAdapters } from "./__mocks__/adapter";
 dotenv.config();
 jest.requireActual("@octokit/rest");
 jest.requireActual("@supabase/supabase-js");
-jest.requireActual("openai");
 const octokit = new Octokit();
 
 beforeAll(() => {
@@ -41,7 +40,6 @@ describe("Plugin tests", () => {
     const response = await worker.fetch(new Request("http://localhost/manifest.json"), {
       SUPABASE_KEY: "test",
       SUPABASE_URL: "test",
-      OPENAI_API_KEY: "test",
       VOYAGEAI_API_KEY: "test",
     });
     const content = await response.json();

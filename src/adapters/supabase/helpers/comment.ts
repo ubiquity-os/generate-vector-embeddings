@@ -29,10 +29,6 @@ export class Comment extends SuperSupabase {
     } else {
       //Create the embedding for this comment
       const embedding = await this.context.adapters.voyage.embedding.createEmbedding(plaintext);
-      //If embedding is smaller than 3072, pad it with 0s
-      if (embedding.length < 3072) {
-        embedding.push(...new Array(3072 - embedding.length).fill(0));
-      }
       if (isPrivate) {
         plaintext = null as string | null;
         commentobject = null as Record<string, unknown> | null;
@@ -51,9 +47,6 @@ export class Comment extends SuperSupabase {
   async updateComment(plaintext: string | null, commentNodeId: string, commentobject: Record<string, unknown> | null, isPrivate: boolean) {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(plaintext));
-    if (embedding.length < 3072) {
-      embedding.push(...new Array(3072 - embedding.length).fill(0));
-    }
     if (isPrivate) {
       plaintext = null as string | null;
       commentobject = null as Record<string, unknown> | null;

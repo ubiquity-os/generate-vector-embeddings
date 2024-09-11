@@ -9,7 +9,6 @@ import { createClient } from "@supabase/supabase-js";
 import { addComments } from "./handlers/add-comments";
 import { updateComment } from "./handlers/update-comments";
 import { deleteComment } from "./handlers/delete-comments";
-import OpenAI from "openai";
 import { VoyageAIClient } from "voyageai";
 
 /**
@@ -38,9 +37,6 @@ export async function runPlugin(context: Context) {
 export async function plugin(inputs: PluginInputs, env: Env) {
   const octokit = new Octokit({ auth: inputs.authToken });
   const supabase = createClient<Database>(env.SUPABASE_URL, env.SUPABASE_KEY);
-  const openaiClient = new OpenAI({
-    apiKey: env.OPENAI_API_KEY,
-  });
   const voyageClient = new VoyageAIClient({
     apiKey: env.VOYAGEAI_API_KEY,
   });
@@ -53,6 +49,6 @@ export async function plugin(inputs: PluginInputs, env: Env) {
     logger: new Logs("info" as LogLevel),
     adapters: {} as ReturnType<typeof createAdapters>,
   };
-  context.adapters = createAdapters(supabase, openaiClient, voyageClient, context);
+  context.adapters = createAdapters(supabase, voyageClient, context);
   return runPlugin(context);
 }

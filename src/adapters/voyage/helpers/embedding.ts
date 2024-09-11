@@ -1,7 +1,7 @@
 import { VoyageAIClient } from "voyageai";
 import { Context } from "../../../types";
 import { SuperVoyage } from "./voyage";
-const VECTOR_SIZE = 3072;
+const VECTOR_SIZE = 1024;
 
 export class Embedding extends SuperVoyage {
   protected context: Context;
