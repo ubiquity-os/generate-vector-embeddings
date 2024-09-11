@@ -1,4 +1,4 @@
-import { cleanCommentObject } from "../adapters/utils/cleanCommentObject";
+import { cleanCommentObject } from "../adapters/utils/comment-object-clean";
 import { Context } from "../types";
 
 export async function updateComment(context: Context) {
