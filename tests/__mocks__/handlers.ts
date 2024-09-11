@@ -1,6 +1,5 @@
 import { http, HttpResponse } from "msw";
 import { db } from "./db";
-import issueTemplate from "./issue-template";
 /**
  * Intercepts the routes and returns a custom payload
  */
@@ -30,13 +29,6 @@ export const handlers = [
       return new HttpResponse(null, { status: 404 });
     }
     return HttpResponse.json(item);
-  }),
-  // create issue
-  http.post("https://api.github.com/repos/:owner/:repo/issues", () => {
-    const id = db.issue.count() + 1;
-    const newItem = { ...issueTemplate, id };
-    db.issue.create(newItem);
-    return HttpResponse.json(newItem);
   }),
   // create comment
   http.post("https://api.github.com/repos/:owner/:repo/issues/:issue_number/comments", async ({ params: { issue_number: issueNumber }, request }) => {

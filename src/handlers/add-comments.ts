@@ -15,7 +15,7 @@ export async function addComments(context: Context) {
 
   // Add the comment to the database
   try {
-    await supabase.comment.createComment(plaintext, nodeId, authorId, commentobject as JSON, isPrivate);
+    await supabase.comment.createComment(plaintext, nodeId, authorId, commentobject, isPrivate);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error creating comment:`, { error: error, stack: error.stack });

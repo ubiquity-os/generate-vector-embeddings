@@ -16,7 +16,7 @@ export class Comment extends SuperSupabase {
     super(supabase, context);
   }
 
-  async createComment(plaintext: string | null, commentNodeId: string, authorId: number, commentobject: JSON | null, isPrivate: boolean) {
+  async createComment(plaintext: string | null, commentNodeId: string, authorId: number, commentobject: Record<string, unknown> | null, isPrivate: boolean) {
     //First Check if the comment already exists
     const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
@@ -35,7 +35,7 @@ export class Comment extends SuperSupabase {
       }
       if (isPrivate) {
         plaintext = null as string | null;
-        commentobject = null as JSON | null;
+        commentobject = null as Record<string, unknown> | null;
       }
       const { error } = await this.supabase
         .from("issue_comments")
@@ -48,7 +48,7 @@ export class Comment extends SuperSupabase {
     this.context.logger.info("Comment created successfully");
   }
 
-  async updateComment(plaintext: string | null, commentNodeId: string, commentobject: JSON | null, isPrivate: boolean) {
+  async updateComment(plaintext: string | null, commentNodeId: string, commentobject: Record<string, unknown> | null, isPrivate: boolean) {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(plaintext));
     if (embedding.length < 3072) {
@@ -56,7 +56,7 @@ export class Comment extends SuperSupabase {
     }
     if (isPrivate) {
       plaintext = null as string | null;
-      commentobject = null as JSON | null;
+      commentobject = null as Record<string, unknown> | null;
     }
     const { error } = await this.supabase
       .from("issue_comments")
