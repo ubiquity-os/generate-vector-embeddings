@@ -12,10 +12,5 @@ import { Context } from "./context";
  * @param context The context object.
  */
 export function isIssueCommentEvent(context: Context): context is Context<"issue_comment.created" | "issue_comment.deleted" | "issue_comment.edited"> {
-  return (
-    context.eventName === "issue_comment.created" || context.eventName === "issue_comment.deleted" || context.eventName === "issue_comment.edited" //||
-    // context.eventName === "issue.created" ||
-    // context.eventName === "issue.edited" ||
-    // context.eventName === "issue.deleted"
-  );
+  return context.eventName === "issue_comment.created" || context.eventName === "issue_comment.deleted" || context.eventName === "issue_comment.edited";
 }

@@ -10,10 +10,6 @@ import { addComments } from "./handlers/add-comments";
 import { updateComment } from "./handlers/update-comments";
 import { deleteComment } from "./handlers/delete-comments";
 import { VoyageAIClient } from "voyageai";
-// import { issueChecker } from "./handlers/issue-deduplication";
-// import { deleteIssues } from "./handlers/delete-issues";
-// import { addIssue } from "./handlers/add-issue";
-// import { updateIssue } from "./handlers/update-issue";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -28,12 +24,6 @@ export async function runPlugin(context: Context) {
         return await deleteComment(context);
       case "issue_comment.edited":
         return await updateComment(context);
-      // case "issue.created":
-      //   return (await issueChecker(context)) === false ? await addIssue(context) : null;
-      // case "issue.edited":
-      //   return (await issueChecker(context)) === false ? await updateIssue(context) : null;
-      // case "issue.deleted":
-      //   return await deleteIssues(context);
     }
   } else {
     logger.error(`Unsupported event: ${eventName}`);
