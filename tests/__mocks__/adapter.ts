@@ -6,7 +6,9 @@ export interface CommentMock {
   id: string;
   plaintext: string | null;
   author_id: number;
-  commentObject?: Record<string, unknown> | null;
+  payload?: Record<string, unknown> | null;
+  type?: string;
+  issue_id?: string;
   embedding: number[];
 }
 
@@ -16,7 +18,14 @@ export function createMockAdapters(context: Context) {
     supabase: {
       comment: {
         createComment: jest.fn(
-          async (plaintext: string | null, commentNodeId: string, authorId: number, commentObject: Record<string, unknown> | null, isPrivate: boolean) => {
+          async (
+            plaintext: string | null,
+            commentNodeId: string,
+            authorId: number,
+            payload: Record<string, unknown> | null,
+            isPrivate: boolean,
+            issueId: string
+          ) => {
             if (commentMap.has(commentNodeId)) {
               throw new Error("Comment already exists");
             }
@@ -24,10 +33,10 @@ export function createMockAdapters(context: Context) {
             if (isPrivate) {
               plaintext = null;
             }
-            commentMap.set(commentNodeId, { id: commentNodeId, plaintext, author_id: authorId, embedding });
+            commentMap.set(commentNodeId, { id: commentNodeId, plaintext, author_id: authorId, embedding, issue_id: issueId });
           }
         ),
-        updateComment: jest.fn(async (plaintext: string | null, commentNodeId: string, commentObject: Record<string, unknown> | null, isPrivate: boolean) => {
+        updateComment: jest.fn(async (plaintext: string | null, commentNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean) => {
           if (!commentMap.has(commentNodeId)) {
             throw new Error(STRINGS.COMMENT_DOES_NOT_EXIST);
           }

@@ -52,7 +52,7 @@ export class Issues extends SuperSupabase {
       payloadObject = null as Record<string, unknown> | null;
     }
     const { error } = await this.supabase
-      .from("vectordump")
+      .from("issue_comments")
       .update({ plaintext, embedding: embedding, payloadObject, modified_at: new Date() })
       .eq("id", issueNodeId);
     if (error) {
@@ -61,7 +61,7 @@ export class Issues extends SuperSupabase {
   }
 
   async deleteIssue(issueNodeId: string) {
-    const { error } = await this.supabase.from("vectordump").delete().eq("id", issueNodeId);
+    const { error } = await this.supabase.from("issue_comments").delete().eq("id", issueNodeId);
     if (error) {
       this.context.logger.error("Error deleting comment", error);
     }
