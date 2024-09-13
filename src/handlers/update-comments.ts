@@ -12,6 +12,9 @@ export async function updateComment(context: Context) {
   const markdown = payload.comment.body || null;
   // Fetch the previous comment and update it in the db
   try {
+    if (!markdown) {
+      throw new Error("Comment body is empty");
+    }
     await supabase.comment.updateComment(markdown, nodeId, payload, isPrivate);
   } catch (error) {
     if (error instanceof Error) {

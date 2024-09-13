@@ -13,6 +13,9 @@ export async function updateIssue(context: Context) {
   const markdown = payload.issue.body + " " + payload.issue.title || null;
   // Fetch the previous issue and update it in the db
   try {
+    if (!markdown) {
+      throw new Error("Issue body is empty");
+    }
     await supabase.issue.updateIssue(markdown, nodeId, payloadObject, isPrivate);
   } catch (error) {
     if (error instanceof Error) {

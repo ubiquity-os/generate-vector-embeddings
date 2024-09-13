@@ -13,6 +13,9 @@ export async function addIssue(context: Context) {
   const isPrivate = payload.repository.private;
 
   try {
+    if (!markdown) {
+      throw new Error("Issue body is empty");
+    }
     await supabase.issue.createIssue(nodeId, payload, isPrivate, markdown, authorId);
   } catch (error) {
     if (error instanceof Error) {
