@@ -3,16 +3,6 @@ import { SuperSupabase } from "./supabase";
 import { Context } from "../../../types/context";
 import { markdownToPlainText } from "../../utils/markdown-to-plaintext";
 
-export interface IssueType {
-  id: string;
-  markdown?: string;
-  author_id: number;
-  created_at: string;
-  modified_at: string;
-  payloadObject: Record<string, unknown> | null;
-  embedding: number[];
-}
-
 export interface IssueSimilaritySearchResult {
   issue_id: string;
   issue_plaintext: string;

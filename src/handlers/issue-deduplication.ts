@@ -72,13 +72,15 @@ export async function issueChecker(context: Context): Promise<boolean> {
       issue_number: issue.number,
       state: "open",
     });
-    //Remove the "unplanned" label
-    await context.octokit.issues.removeLabel({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      issue_number: issue.number,
-      name: "unplanned",
-    });
+    //Remove the "unplanned" label if it exists
+    if (issue.labels && issue.labels.find((label) => label.name === "unplanned")) {
+      await context.octokit.issues.removeLabel({
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        issue_number: issue.number,
+        name: "unplanned",
+      });
+    }
     // Check if there is already a comment on the issue
     const existingComment = await context.octokit.issues.listComments({
       owner: payload.repository.owner.login,
