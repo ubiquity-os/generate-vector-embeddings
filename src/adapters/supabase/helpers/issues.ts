@@ -19,7 +19,6 @@ export class Issues extends SuperSupabase {
 
   async createIssue(issueNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean, plaintext: string | null, authorId: number) {
     //First Check if the issue already exists
-    console.log(payload);
     const { data, error } = await this.supabase.from("issues").select("*").eq("id", issueNodeId);
     if (error) {
       this.context.logger.error("Error creating issue", error);
@@ -36,7 +35,6 @@ export class Issues extends SuperSupabase {
       }
       const { error } = await this.supabase.from("issues").insert([{ id: issueNodeId, payload, type: "issue", plaintext, author_id: authorId, embedding }]);
       if (error) {
-        console.log(error.message, error.details, { id: issueNodeId, payload, type: "issue", plaintext, author_id: authorId, embedding });
         this.context.logger.error("Error creating issue", error);
         return;
       }
@@ -51,7 +49,6 @@ export class Issues extends SuperSupabase {
       plaintext = null as string | null;
       payload = null as Record<string, unknown> | null;
     }
-    console.log({ id: issueNodeId, plaintext, payload, embedding });
     const { error } = await this.supabase.from("issues").update({ plaintext, embedding: embedding, payload, modified_at: new Date() }).eq("id", issueNodeId);
     if (error) {
       this.context.logger.error("Error updating comment", error);
