@@ -10,7 +10,7 @@ export async function updateIssue(context: Context) {
   const payloadObject = payload;
   const nodeId = payload.issue.node_id;
   const isPrivate = payload.repository.private;
-  const markdown = payload.issue.body + " " + payload.issue.title || "";
+  const markdown = payload.issue.body + " " + payload.issue.title || null;
   // Fetch the previous issue and update it in the db
   try {
     await supabase.issue.updateIssue(markdown, nodeId, payloadObject, isPrivate);
@@ -25,5 +25,5 @@ export async function updateIssue(context: Context) {
   }
 
   logger.ok(`Successfully updated issue!`);
-  logger.verbose(`Exiting updateIssue`);
+  logger.debug(`Exiting updateIssue`);
 }

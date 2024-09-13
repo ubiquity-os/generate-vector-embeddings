@@ -3,7 +3,10 @@
  * @param markdown
  * @returns
  */
-export function markdownToPlainText(markdown: string): string {
+export function markdownToPlainText(markdown: string | null): string | null {
+  if (!markdown) {
+    return markdown;
+  }
   let text = markdown.replace(/^#{1,6}\s+/gm, ""); // Remove headers
   text = text.replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1"); // Inline links
   text = text.replace(/!\[([^\]]*)\]\([^\)]+\)/g, "$1"); // Inline images

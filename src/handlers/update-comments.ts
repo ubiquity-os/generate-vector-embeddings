@@ -9,7 +9,7 @@ export async function updateComment(context: Context) {
   const { payload } = context as { payload: CommentPayload };
   const nodeId = payload.comment.node_id;
   const isPrivate = payload.repository.private;
-  const markdown = payload.comment.body;
+  const markdown = payload.comment.body || null;
   // Fetch the previous comment and update it in the db
   try {
     await supabase.comment.updateComment(markdown, nodeId, payload, isPrivate);
@@ -24,5 +24,5 @@ export async function updateComment(context: Context) {
   }
 
   logger.ok(`Successfully updated comment!`);
-  logger.verbose(`Exiting updateComment`);
+  logger.debug(`Exiting updateComment`);
 }

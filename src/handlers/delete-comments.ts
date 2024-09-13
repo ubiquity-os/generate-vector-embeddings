@@ -22,5 +22,5 @@ export async function deleteComment(context: Context) {
   }
 
   logger.ok(`Successfully deleted comment!`);
-  logger.verbose(`Exiting deleteComments`);
+  logger.debug(`Exiting deleteComments`);
 }

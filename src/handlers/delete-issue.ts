@@ -22,5 +22,5 @@ export async function deleteIssues(context: Context) {
   }
 
   logger.ok(`Successfully deleted issue!`);
-  logger.verbose(`Exiting deleteIssue`);
+  logger.debug(`Exiting deleteIssue`);
 }

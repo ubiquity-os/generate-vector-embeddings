@@ -7,7 +7,7 @@ export async function addIssue(context: Context) {
     adapters: { supabase },
   } = context;
   const { payload } = context as { payload: IssuePayload };
-  const markdown = payload.issue.body + " " + payload.issue.title || "";
+  const markdown = payload.issue.body + " " + payload.issue.title || null;
   const authorId = payload.issue.user?.id || -1;
   const nodeId = payload.issue.node_id;
   const isPrivate = payload.repository.private;
@@ -25,5 +25,5 @@ export async function addIssue(context: Context) {
   }
 
   logger.ok(`Successfully created issue!`);
-  logger.verbose(`Exiting addIssue`);
+  logger.debug(`Exiting addIssue`);
 }

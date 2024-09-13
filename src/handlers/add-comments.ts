@@ -7,14 +7,14 @@ export async function addComments(context: Context) {
     adapters: { supabase },
   } = context;
   const { payload } = context as { payload: CommentPayload };
-  const plaintext = payload.comment.body;
+  const markdown = payload.comment.body || null;
   const authorId = payload.comment.user?.id || -1;
   const nodeId = payload.comment.node_id;
   const isPrivate = payload.repository.private;
   const issueId = payload.issue.node_id;
 
   try {
-    await supabase.comment.createComment(plaintext, nodeId, authorId, payload, isPrivate, issueId);
+    await supabase.comment.createComment(markdown, nodeId, authorId, payload, isPrivate, issueId);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error creating comment:`, { error: error, stack: error.stack });
@@ -26,5 +26,5 @@ export async function addComments(context: Context) {
   }
 
   logger.ok(`Successfully created comment!`);
-  logger.verbose(`Exiting addComments`);
+  logger.debug(`Exiting addComments`);
 }
