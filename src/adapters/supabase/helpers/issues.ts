@@ -13,6 +13,12 @@ export interface IssueType {
   embedding: number[];
 }
 
+export interface IssueSimilaritySearchResult {
+  issue_id: string;
+  issue_plaintext: string;
+  similarity: number;
+}
+
 export class Issues extends SuperSupabase {
   constructor(supabase: SupabaseClient, context: Context) {
     super(supabase, context);
@@ -70,15 +76,13 @@ export class Issues extends SuperSupabase {
     }
   }
 
-  async findSimilarIssues(markdown: string, threshold: number): Promise<IssueType[] | null> {
+  async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[] | null> {
     const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
-    const { data, error } = await this.supabase
-      .from("issues")
-      .select("*")
-      .eq("type", "issue")
-      .textSearch("embedding", embedding.join(","))
-      .order("embedding", { foreignTable: "issues", ascending: false })
-      .lte("embedding", threshold);
+    const { data, error } = await this.supabase.rpc("find_similar_issues", {
+      current_id: currentId,
+      query_embedding: embedding,
+      threshold: threshold,
+    });
     if (error) {
       this.context.logger.error("Error finding similar issues", error);
       return [];

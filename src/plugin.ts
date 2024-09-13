@@ -13,6 +13,7 @@ import { VoyageAIClient } from "voyageai";
 import { deleteIssues } from "./handlers/delete-issue";
 import { addIssue } from "./handlers/add-issue";
 import { updateIssue } from "./handlers/update-issue";
+import { issueChecker } from "./handlers/issue-deduplication";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -31,11 +32,12 @@ export async function runPlugin(context: Context) {
   } else if (isIssueEvent(context)) {
     switch (eventName) {
       case "issues.opened":
-        return await addIssue(context);
+        return (await issueChecker(context)) ? null : await addIssue(context);
+      case "issues.edited":
+        await issueChecker(context);
+        return await updateIssue(context);
       case "issues.deleted":
         return await deleteIssues(context);
-      case "issues.edited":
-        return await updateIssue(context);
     }
   } else {
     logger.error(`Unsupported event: ${eventName}`);
