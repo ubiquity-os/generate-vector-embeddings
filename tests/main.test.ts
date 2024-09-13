@@ -4,7 +4,7 @@ import { drop } from "@mswjs/data";
 import { db } from "./__mocks__/db";
 import { server } from "./__mocks__/node";
 import { expect, describe, beforeAll, beforeEach, afterAll, afterEach, it } from "@jest/globals";
-import { Context } from "../src/types/context";
+import { Context, SupportedEvents } from "../src/types/context";
 import { Octokit } from "@octokit/rest";
 import { STRINGS } from "./__mocks__/strings";
 import { createComment, setupTests } from "./__mocks__/helpers";
@@ -18,7 +18,6 @@ import { CommentMock, createMockAdapters } from "./__mocks__/adapter";
 dotenv.config();
 jest.requireActual("@octokit/rest");
 jest.requireActual("@supabase/supabase-js");
-jest.requireActual("openai");
 const octokit = new Octokit();
 
 beforeAll(() => {
@@ -41,51 +40,51 @@ describe("Plugin tests", () => {
     const response = await worker.fetch(new Request("http://localhost/manifest.json"), {
       SUPABASE_KEY: "test",
       SUPABASE_URL: "test",
-      OPENAI_API_KEY: "test",
+      VOYAGEAI_API_KEY: "test",
     });
     const content = await response.json();
     expect(content).toEqual(manifest);
   });
 
   it("When a comment is created it should add it to the database", async () => {
-    const { context } = createContext();
+    const { context } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "sasasCreate");
     await runPlugin(context);
     const supabase = context.adapters.supabase;
+    const commentObject = null;
     try {
-      const issueBody = context.payload.issue.body || "";
-      await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
+      await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasCreate", 1, commentObject, false, "sasasCreateIssue");
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
         expect(error.message).toBe("Comment already exists");
       }
     }
-    const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
+    const comment = (await supabase.comment.getComment("sasasCreate")) as unknown as CommentMock;
     expect(comment).toBeDefined();
-    expect(comment?.commentbody).toBeDefined();
-    expect(comment?.commentbody).toBe(STRINGS.HELLO_WORLD);
+    expect(comment?.plaintext).toBeDefined();
+    expect(comment?.plaintext).toBe(STRINGS.HELLO_WORLD);
   });
 
   it("When a comment is updated it should update the database", async () => {
-    const { context } = createContext("Updated Message", 1, 1, 1, 1, "issue_comment.edited");
+    const { context } = createContext("Updated Message", 1, 1, 1, 1, "sasasUpdate", "issue_comment.edited");
     const supabase = context.adapters.supabase;
-    const issueBody = context.payload.issue.body || "";
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
+    const commentObject = null;
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasUpdate", 1, commentObject, false, "sasasUpdateIssue");
     await runPlugin(context);
-    const comment = (await supabase.comment.getComment(1)) as unknown as CommentMock;
+    const comment = (await supabase.comment.getComment("sasasUpdate")) as unknown as CommentMock;
     expect(comment).toBeDefined();
-    expect(comment?.commentbody).toBeDefined();
-    expect(comment?.commentbody).toBe("Updated Message");
+    expect(comment?.plaintext).toBeDefined();
+    expect(comment?.plaintext).toBe("Updated Message");
   });
 
   it("When a comment is deleted it should delete it from the database", async () => {
-    const { context } = createContext("Text Message", 1, 1, 1, 1, "issue_comment.deleted");
+    const { context } = createContext("Text Message", 1, 1, 1, 1, "sasasDelete", "issue_comment.deleted");
     const supabase = context.adapters.supabase;
-    const issueBody = context.payload.issue.body || "";
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, 1, issueBody);
+    const commentObject = null;
+    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasDelete", 1, commentObject, false, "sasasDeleteIssue");
     await runPlugin(context);
     try {
-      await supabase.comment.getComment(1);
+      await supabase.comment.getComment("sasasDelete");
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
@@ -109,14 +108,17 @@ function createContext(
   payloadSenderId: number = 1,
   commentId: number = 1,
   issueOne: number = 1,
+  nodeId: string = "sasas",
   eventName: Context["eventName"] = "issue_comment.created"
 ) {
   const repo = db.repo.findFirst({ where: { id: { equals: repoId } } }) as unknown as Context["payload"]["repository"];
   const sender = db.users.findFirst({ where: { id: { equals: payloadSenderId } } }) as unknown as Context["payload"]["sender"];
   const issue1 = db.issue.findFirst({ where: { id: { equals: issueOne } } }) as unknown as Context["payload"]["issue"];
 
-  createComment(commentBody, commentId); // create it first then pull it from the DB and feed it to _createContext
-  const comment = db.issueComments.findFirst({ where: { id: { equals: commentId } } }) as unknown as Context["payload"]["comment"];
+  createComment(commentBody, commentId, nodeId); // create it first then pull it from the DB and feed it to _createContext
+  const comment = db.issueComments.findFirst({
+    where: { id: { equals: commentId } },
+  }) as unknown as unknown as SupportedEvents["issue_comment.created"]["payload"]["comment"];
 
   const context = createContextInner(repo, sender, issue1, comment, eventName);
   context.adapters = createMockAdapters(context) as unknown as Context["adapters"];
@@ -147,7 +149,7 @@ function createContextInner(
   repo: Context["payload"]["repository"],
   sender: Context["payload"]["sender"],
   issue: Context["payload"]["issue"],
-  comment: Context["payload"]["comment"],
+  comment: SupportedEvents["issue_comment.created"]["payload"]["comment"],
   eventName: Context["eventName"] = "issue_comment.created"
 ): Context {
   return {
