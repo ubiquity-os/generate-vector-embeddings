@@ -47,7 +47,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
     //Build a list of similar issues url
     const issueList: IssueGraphqlResponse[] = await Promise.all(
       warningIssue.map(async (issue: IssueSimilaritySearchResult) => {
-        //fetch the issue url and title using globaNodeId
+        //fetch the issue url and title using globalNodeId
         const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
           `query($issueNodeId: ID!) {
                     node(id: $issueNodeId) {
