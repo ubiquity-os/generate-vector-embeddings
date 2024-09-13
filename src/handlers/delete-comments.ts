@@ -1,12 +1,12 @@
 import { Context } from "../types";
+import { CommentPayload } from "../types/payload";
 
 export async function deleteComment(context: Context) {
   const {
     logger,
-    payload,
     adapters: { supabase },
   } = context;
-
+  const { payload } = context as { payload: CommentPayload };
   const nodeId = payload.comment.node_id;
 
   try {

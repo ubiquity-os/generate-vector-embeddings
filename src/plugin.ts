@@ -1,7 +1,7 @@
 import { Octokit } from "@octokit/rest";
 import { Env, PluginInputs } from "./types";
 import { Context } from "./types";
-import { isIssueCommentEvent } from "./types/typeguards";
+import { isIssueCommentEvent, isIssueEvent } from "./types/typeguards";
 import { LogLevel, Logs } from "@ubiquity-dao/ubiquibot-logger";
 import { Database } from "./types/database";
 import { createAdapters } from "./adapters";
@@ -10,6 +10,9 @@ import { addComments } from "./handlers/add-comments";
 import { updateComment } from "./handlers/update-comments";
 import { deleteComment } from "./handlers/delete-comments";
 import { VoyageAIClient } from "voyageai";
+import { deleteIssues } from "./handlers/delete-issue";
+import { addIssue } from "./handlers/add-issue";
+import { updateIssue } from "./handlers/update-issue";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -24,6 +27,15 @@ export async function runPlugin(context: Context) {
         return await deleteComment(context);
       case "issue_comment.edited":
         return await updateComment(context);
+    }
+  } else if (isIssueEvent(context)) {
+    switch (eventName) {
+      case "issues.created":
+        return await addIssue(context);
+      case "issues.deleted":
+        return await deleteIssues(context);
+      case "issues.edited":
+        return await updateIssue(context);
     }
   } else {
     logger.error(`Unsupported event: ${eventName}`);
@@ -50,5 +62,7 @@ export async function plugin(inputs: PluginInputs, env: Env) {
     adapters: {} as ReturnType<typeof createAdapters>,
   };
   context.adapters = createAdapters(supabase, voyageClient, context);
-  return runPlugin(context);
+  if (isIssueEvent(context)) {
+    return await runPlugin(context);
+  }
 }

@@ -4,7 +4,7 @@ import { drop } from "@mswjs/data";
 import { db } from "./__mocks__/db";
 import { server } from "./__mocks__/node";
 import { expect, describe, beforeAll, beforeEach, afterAll, afterEach, it } from "@jest/globals";
-import { Context } from "../src/types/context";
+import { Context, SupportedEvents } from "../src/types/context";
 import { Octokit } from "@octokit/rest";
 import { STRINGS } from "./__mocks__/strings";
 import { createComment, setupTests } from "./__mocks__/helpers";
@@ -116,7 +116,9 @@ function createContext(
   const issue1 = db.issue.findFirst({ where: { id: { equals: issueOne } } }) as unknown as Context["payload"]["issue"];
 
   createComment(commentBody, commentId, nodeId); // create it first then pull it from the DB and feed it to _createContext
-  const comment = db.issueComments.findFirst({ where: { id: { equals: commentId } } }) as unknown as Context["payload"]["comment"];
+  const comment = db.issueComments.findFirst({
+    where: { id: { equals: commentId } },
+  }) as unknown as unknown as SupportedEvents["issue_comment.created"]["payload"]["comment"];
 
   const context = createContextInner(repo, sender, issue1, comment, eventName);
   context.adapters = createMockAdapters(context) as unknown as Context["adapters"];
@@ -147,7 +149,7 @@ function createContextInner(
   repo: Context["payload"]["repository"],
   sender: Context["payload"]["sender"],
   issue: Context["payload"]["issue"],
-  comment: Context["payload"]["comment"],
+  comment: SupportedEvents["issue_comment.created"]["payload"]["comment"],
   eventName: Context["eventName"] = "issue_comment.created"
 ): Context {
   return {
