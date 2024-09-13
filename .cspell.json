@@ -25,7 +25,8 @@
     "issuebody",
     "voyageai",
     "vectordump",
-    "payloadobject"
+    "payloadobject",
+    "markdownit"
   ],
   "dictionaries": ["typescript", "node", "software-terms"],
   "import": ["@cspell/dict-typescript/cspell-ext.json", "@cspell/dict-node/cspell-ext.json", "@cspell/dict-software-terms"],
