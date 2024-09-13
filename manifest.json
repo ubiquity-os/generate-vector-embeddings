@@ -1,5 +1,5 @@
 {
   "name": "@ubiquity-os/comment-vector-embeddings",
   "description": "Issue comment plugin for Ubiquibot. It enables the storage, updating, and deletion of issue comment embeddings.",
-  "ubiquity:listeners": ["issue_comment.created", "issue_comment.edited", "issue_comment.deleted"]
+  "ubiquity:listeners": ["issue_comment.created", "issue_comment.edited", "issue_comment.deleted", "issue.created", "issue.edited", "issue.deleted"]
 }
