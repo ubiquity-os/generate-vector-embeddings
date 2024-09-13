@@ -30,7 +30,7 @@ export async function runPlugin(context: Context) {
     }
   } else if (isIssueEvent(context)) {
     switch (eventName) {
-      case "issues.created":
+      case "issues.opened":
         return await addIssue(context);
       case "issues.deleted":
         return await deleteIssues(context);

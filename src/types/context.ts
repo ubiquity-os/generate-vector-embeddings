@@ -14,7 +14,7 @@ export type SupportedEventsU =
   | "issue_comment.created"
   | "issue_comment.deleted"
   | "issue_comment.edited"
-  | "issues.created"
+  | "issues.opened"
   | "issues.edited"
   | "issues.deleted";
 

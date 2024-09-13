@@ -16,10 +16,10 @@ export function isIssueCommentEvent(context: Context): context is Context<"issue
 }
 
 /**
- * Restricts the scope of `context` to the `issues.created`, `issues.edited`, and `issues.deleted` payloads.
+ * Restricts the scope of `context` to the `issues.opened`, `issues.edited`, and `issues.deleted` payloads.
  *
  * @param context The context object.
  */
-export function isIssueEvent(context: Context): context is Context<"issues.created" | "issues.edited" | "issues.deleted"> {
-  return context.eventName === "issues.created" || context.eventName === "issues.edited" || context.eventName === "issues.deleted";
+export function isIssueEvent(context: Context): context is Context<"issues.opened" | "issues.edited" | "issues.deleted"> {
+  return context.eventName === "issues.opened" || context.eventName === "issues.edited" || context.eventName === "issues.deleted";
 }
