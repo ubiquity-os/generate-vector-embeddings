@@ -42,8 +42,9 @@ export class Comment extends SuperSupabase {
       }
       const { error } = await this.supabase
         .from("issue_comments")
-        .insert([{ id: commentNodeId, plaintext, author_id: authorId, type: "comment", payload, embedding: embedding, issueId }]);
+        .insert([{ id: commentNodeId, plaintext, author_id: authorId, type: "comment", payload, embedding: embedding, issue_id: issueId }]);
       if (error) {
+        console.log(error.message, error.details, { id: commentNodeId, plaintext, author_id: authorId, type: "comment", payload, embedding });
         this.context.logger.error("Error creating comment", error);
         return;
       }

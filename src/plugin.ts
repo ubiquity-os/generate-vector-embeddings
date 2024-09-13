@@ -62,7 +62,5 @@ export async function plugin(inputs: PluginInputs, env: Env) {
     adapters: {} as ReturnType<typeof createAdapters>,
   };
   context.adapters = createAdapters(supabase, voyageClient, context);
-  if (isIssueEvent(context)) {
-    return await runPlugin(context);
-  }
+  return await runPlugin(context);
 }

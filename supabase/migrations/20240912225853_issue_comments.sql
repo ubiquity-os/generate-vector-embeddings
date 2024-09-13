@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS issues (
     plaintext text,
     embedding Vector(1024) not null,
     payload jsonb,
+    author_id VARCHAR not null,
     type text not null default 'issue',
     created_at timestamptz not null default now(),
     modified_at timestamptz not null default now()

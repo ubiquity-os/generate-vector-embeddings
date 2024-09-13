@@ -17,8 +17,9 @@ export class Issues extends SuperSupabase {
     super(supabase, context);
   }
 
-  async createIssue(issueNodeId: string, payloadObject: Record<string, unknown> | null, isPrivate: boolean, plaintext: string | null, authorId: number) {
+  async createIssue(issueNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean, plaintext: string | null, authorId: number) {
     //First Check if the issue already exists
+    console.log(payload);
     const { data, error } = await this.supabase.from("issues").select("*").eq("id", issueNodeId);
     if (error) {
       this.context.logger.error("Error creating issue", error);
@@ -30,13 +31,12 @@ export class Issues extends SuperSupabase {
     } else {
       const embedding = await this.context.adapters.voyage.embedding.createEmbedding(plaintext);
       if (isPrivate) {
-        payloadObject = null;
+        payload = null;
         plaintext = null;
       }
-      const { error } = await this.supabase
-        .from("issues")
-        .insert([{ id: issueNodeId, payloadObject, type: "issue", plaintext, author_id: authorId, embedding }]);
+      const { error } = await this.supabase.from("issues").insert([{ id: issueNodeId, payload, type: "issue", plaintext, author_id: authorId, embedding }]);
       if (error) {
+        console.log(error.message, error.details, { id: issueNodeId, payload, type: "issue", plaintext, author_id: authorId, embedding });
         this.context.logger.error("Error creating issue", error);
         return;
       }
@@ -44,24 +44,22 @@ export class Issues extends SuperSupabase {
     this.context.logger.info("Issue created successfully");
   }
 
-  async updateIssue(plaintext: string | null, issueNodeId: string, payloadObject: Record<string, unknown> | null, isPrivate: boolean) {
+  async updateIssue(plaintext: string | null, issueNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean) {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(plaintext));
     if (isPrivate) {
       plaintext = null as string | null;
-      payloadObject = null as Record<string, unknown> | null;
+      payload = null as Record<string, unknown> | null;
     }
-    const { error } = await this.supabase
-      .from("issue_comments")
-      .update({ plaintext, embedding: embedding, payloadObject, modified_at: new Date() })
-      .eq("id", issueNodeId);
+    console.log({ id: issueNodeId, plaintext, payload, embedding });
+    const { error } = await this.supabase.from("issues").update({ plaintext, embedding: embedding, payload, modified_at: new Date() }).eq("id", issueNodeId);
     if (error) {
       this.context.logger.error("Error updating comment", error);
     }
   }
 
   async deleteIssue(issueNodeId: string) {
-    const { error } = await this.supabase.from("issue_comments").delete().eq("id", issueNodeId);
+    const { error } = await this.supabase.from("issues").delete().eq("id", issueNodeId);
     if (error) {
       this.context.logger.error("Error deleting comment", error);
     }
