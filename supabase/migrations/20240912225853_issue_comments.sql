@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS issues (
     embedding Vector(1024) not null,
     payload jsonb,
     author_id VARCHAR not null,
-    type text not null default 'issue',
     created_at timestamptz not null default now(),
     modified_at timestamptz not null default now()
 );
@@ -16,6 +15,9 @@ ALTER TABLE issue_comments
 ADD COLUMN issue_id VARCHAR 
 REFERENCES issues(id) 
 ON DELETE CASCADE;
+
+ALTER TABLE issue_comments
+DROP COLUMN type;
 
 ALTER TABLE issue_comments
 RENAME COLUMN payloadobject TO payload;

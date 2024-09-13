@@ -1,10 +1,11 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { SuperSupabase } from "./supabase";
 import { Context } from "../../../types/context";
+import { markdownToPlainText } from "../../utils/markdown-to-plaintext";
 
 export interface CommentType {
   id: string;
-  plaintext?: string;
+  markdown?: string;
   author_id: number;
   created_at: string;
   modified_at: string;
@@ -17,7 +18,7 @@ export class Comment extends SuperSupabase {
   }
 
   async createComment(
-    plaintext: string | null,
+    markdown: string | null,
     commentNodeId: string,
     authorId: number,
     payload: Record<string, unknown> | null,
@@ -35,14 +36,16 @@ export class Comment extends SuperSupabase {
       return;
     } else {
       //Create the embedding for this comment
-      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(plaintext);
+      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+      let plaintext: string | null = markdownToPlainText(markdown || "");
       if (isPrivate) {
-        plaintext = null as string | null;
+        markdown = null as string | null;
         payload = null as Record<string, unknown> | null;
+        plaintext = null as string | null;
       }
       const { error } = await this.supabase
         .from("issue_comments")
-        .insert([{ id: commentNodeId, plaintext, author_id: authorId, type: "comment", payload, embedding: embedding, issue_id: issueId }]);
+        .insert([{ id: commentNodeId, markdown, plaintext, author_id: authorId, payload, embedding: embedding, issue_id: issueId }]);
       if (error) {
         this.context.logger.error("Error creating comment", error);
         return;
@@ -51,16 +54,18 @@ export class Comment extends SuperSupabase {
     this.context.logger.info("Comment created successfully");
   }
 
-  async updateComment(plaintext: string | null, commentNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean) {
+  async updateComment(markdown: string | null, commentNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean) {
     //Create the embedding for this comment
-    const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(plaintext));
+    const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(markdown));
+    let plaintext: string | null = markdownToPlainText(markdown || "");
     if (isPrivate) {
-      plaintext = null as string | null;
+      markdown = null as string | null;
       payload = null as Record<string, unknown> | null;
+      plaintext = null as string | null;
     }
     const { error } = await this.supabase
       .from("issue_comments")
-      .update({ plaintext, embedding: embedding, payload, modified_at: new Date() })
+      .update({ markdown, plaintext, embedding: embedding, payload, modified_at: new Date() })
       .eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error updating comment", error);
