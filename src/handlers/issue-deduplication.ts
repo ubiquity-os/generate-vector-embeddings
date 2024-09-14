@@ -8,6 +8,7 @@ export interface IssueGraphqlResponse {
     title: string;
     url: string;
   };
+  similarity: number;
 }
 
 /**
@@ -34,7 +35,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
       repo: payload.repository.name,
       issue_number: issue.number,
       state: "closed",
-      labels: ["unplanned"],
+      state_reason: "not_planned",
     });
     return true;
   }
@@ -61,26 +62,10 @@ export async function issueChecker(context: Context): Promise<boolean> {
             issueNodeId: issue.issue_id,
           }
         );
+        issueUrl.similarity = issue.similarity;
         return issueUrl;
       })
     );
-
-    // Reopen the issue
-    await context.octokit.issues.update({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      issue_number: issue.number,
-      state: "open",
-    });
-    //Remove the "unplanned" label if it exists
-    if (issue.labels && issue.labels.find((label) => label.name === "unplanned")) {
-      await context.octokit.issues.removeLabel({
-        owner: payload.repository.owner.login,
-        repo: payload.repository.name,
-        issue_number: issue.number,
-        name: "unplanned",
-      });
-    }
     // Check if there is already a comment on the issue
     const existingComment = await context.octokit.issues.listComments({
       owner: payload.repository.owner.login,
@@ -95,7 +80,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
 
       if (commentToUpdate) {
         // Update the comment with the latest list of similar issues
-        const body = issueList.map((issue) => `- [${issue.node.title}](${issue.node.url})`).join("\n");
+        const body = issueList.map((issue) => `- [${issue.node.title}](${issue.node.url}) Similarity: ${issue.similarity}`).join("\n");
         const updatedBody = `This issue seems to be similar to the following issue(s):\n\n${body}`;
         await context.octokit.issues.updateComment({
           owner: payload.repository.owner.login,
@@ -126,7 +111,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
 async function createNewComment(context: Context, resolvedIssueList: IssueGraphqlResponse[]) {
   let body = "This issue seems to be similar to the following issue(s):\n\n";
   resolvedIssueList.forEach((issue) => {
-    const issueLine = `- [${issue.node.title}](${issue.node.url})\n`;
+    const issueLine = `- [${issue.node.title}](${issue.node.url}) Similarity: ${issue.similarity}\n`;
     body += issueLine;
   });
   await context.octokit.issues.createComment({
