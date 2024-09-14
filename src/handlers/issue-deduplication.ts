@@ -8,7 +8,7 @@ export interface IssueGraphqlResponse {
     title: string;
     url: string;
   };
-  similarity: number;
+  similarity: string;
 }
 
 /**
@@ -62,7 +62,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
             issueNodeId: issue.issue_id,
           }
         );
-        issueUrl.similarity = issue.similarity;
+        issueUrl.similarity = (issue.similarity * 100).toFixed(2);
         return issueUrl;
       })
     );
