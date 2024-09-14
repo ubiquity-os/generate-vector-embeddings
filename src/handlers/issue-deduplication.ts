@@ -1,7 +1,9 @@
 import { IssueSimilaritySearchResult } from "../adapters/supabase/helpers/issues";
 import { Context } from "../types";
+import { IssuePayload } from "../types/payload";
+
 const MATCH_THRESHOLD = 0.95;
-const WARNING_THRESHOLD = 0.5;
+const WARNING_THRESHOLD = 0.75;
 
 export interface IssueGraphqlResponse {
   node: {
@@ -19,105 +21,94 @@ export interface IssueGraphqlResponse {
 export async function issueChecker(context: Context): Promise<boolean> {
   const {
     logger,
-    payload,
     adapters: { supabase },
+    octokit,
   } = context;
-
+  const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
+  const issueContent = issue.body + issue.title;
 
-  //First Check if an issue with more than MATCH_THRESHOLD similarity exists (Very Similar)
-  const similarIssue = await supabase.issue.findSimilarIssues(issue.body + issue.title, MATCH_THRESHOLD, issue.node_id);
-  if (similarIssue && similarIssue?.length > 0) {
-    logger.info(`Similar issue which matches more than ${MATCH_THRESHOLD} already exists`);
-    //Close the issue as "unplanned"
-    await context.octokit.issues.update({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      issue_number: issue.number,
-      state: "closed",
-      state_reason: "not_planned",
-    });
-    return true;
-  }
+  // Fetch all similar issues based on WARNING_THRESHOLD
+  const similarIssues = await supabase.issue.findSimilarIssues(issueContent, WARNING_THRESHOLD, issue.node_id);
+  console.log(similarIssues);
+  if (similarIssues && similarIssues.length > 0) {
+    const matchIssues = similarIssues.filter((issue) => issue.similarity >= MATCH_THRESHOLD);
 
-  //Second Check if an issue with more than WARNING_THRESHOLD similarity exists (Warning)
-  const warningIssue = await supabase.issue.findSimilarIssues(issue.body + issue.title, WARNING_THRESHOLD, issue.node_id);
-  if (warningIssue && warningIssue?.length > 0) {
-    logger.info(`Similar issue which matches more than ${WARNING_THRESHOLD} already exists`);
-    //Add a comment immediately next to the issue
-    //Build a list of similar issues url
-    const issueList: IssueGraphqlResponse[] = await Promise.all(
-      warningIssue.map(async (issue: IssueSimilaritySearchResult) => {
-        //fetch the issue url and title using globalNodeId
-        const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
-          `query($issueNodeId: ID!) {
-                    node(id: $issueNodeId) {
-                        ... on Issue {
-                        title
-                        url
-                        }
-                    }
-                    }`,
-          {
-            issueNodeId: issue.issue_id,
-          }
-        );
-        issueUrl.similarity = (issue.similarity * 100).toFixed(2);
-        return issueUrl;
-      })
-    );
-    // Check if there is already a comment on the issue
-    const existingComment = await context.octokit.issues.listComments({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      issue_number: issue.number,
-    });
-    if (existingComment.data.length > 0) {
-      // Find the comment that lists the similar issues
-      const commentToUpdate = existingComment.data.find(
-        (comment) => comment && comment.body && comment.body.includes("This issue seems to be similar to the following issue(s)")
-      );
-
-      if (commentToUpdate) {
-        // Update the comment with the latest list of similar issues
-        const body = issueList.map((issue) => `- [${issue.node.title}](${issue.node.url}) Similarity: ${issue.similarity}`).join("\n");
-        const updatedBody = `This issue seems to be similar to the following issue(s):\n\n${body}`;
-        await context.octokit.issues.updateComment({
-          owner: payload.repository.owner.login,
-          repo: payload.repository.name,
-          comment_id: commentToUpdate.id,
-          body: updatedBody,
-        });
-      } else {
-        // Add a new comment to the issue
-        await createNewComment(context, issueList);
-      }
-    } else {
-      // Add a new comment to the issue
-      await createNewComment(context, issueList);
+    // Handle issues that match the MATCH_THRESHOLD (Very Similar)
+    if (matchIssues.length > 0) {
+      logger.info(`Similar issue which matches more than ${MATCH_THRESHOLD} already exists`);
+      await octokit.issues.update({
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        issue_number: issue.number,
+        state: "closed",
+        state_reason: "not_planned",
+      });
     }
-    return true;
+
+    // Handle issues that match the WARNING_THRESHOLD but not the MATCH_THRESHOLD
+    if (similarIssues.length > 0) {
+      logger.info(`Similar issue which matches more than ${WARNING_THRESHOLD} already exists`);
+      await handleSimilarIssuesComment(context, payload, issue.number, similarIssues);
+      return true;
+    }
   }
 
-  logger.info("No similar issue found");
   return false;
 }
 
 /**
- * Create a new comment on the issue with the list of similar issues
+ * Handle commenting on an issue with similar issues information
  * @param context
- * @param resolvedIssueList
+ * @param payload
+ * @param issueNumber
+ * @param similarIssues
  */
-async function createNewComment(context: Context, resolvedIssueList: IssueGraphqlResponse[]) {
-  let body = "This issue seems to be similar to the following issue(s):\n\n";
-  resolvedIssueList.forEach((issue) => {
-    const issueLine = `- [${issue.node.title}](${issue.node.url}) Similarity: ${issue.similarity}\n`;
-    body += issueLine;
+async function handleSimilarIssuesComment(context: Context, payload: IssuePayload, issueNumber: number, similarIssues: IssueSimilaritySearchResult[]) {
+  const issueList: IssueGraphqlResponse[] = await Promise.all(
+    similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
+      const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
+        `query($issueNodeId: ID!) {
+          node(id: $issueNodeId) {
+            ... on Issue {
+              title
+              url
+            }
+          }
+        }`,
+        { issueNodeId: issue.issue_id }
+      );
+      issueUrl.similarity = (issue.similarity * 100).toFixed(2);
+      return issueUrl;
+    })
+  );
+
+  const commentBody = issueList.map((issue) => `- [${issue.node.title}](${issue.node.url}) Similarity: ${issue.similarity}`).join("\n");
+  const body = `This issue seems to be similar to the following issue(s):\n\n${commentBody}`;
+
+  const existingComments = await context.octokit.issues.listComments({
+    owner: payload.repository.owner.login,
+    repo: payload.repository.name,
+    issue_number: issueNumber,
   });
-  await context.octokit.issues.createComment({
-    owner: context.payload.repository.owner.login,
-    repo: context.payload.repository.name,
-    issue_number: context.payload.issue.number,
-    body: body,
-  });
+
+  const existingComment = existingComments.data.find(
+    (comment) => comment.body && comment.body.includes("This issue seems to be similar to the following issue(s)")
+  );
+
+  if (existingComment) {
+    await context.octokit.issues.updateComment({
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      comment_id: existingComment.id,
+      body: body,
+    });
+  } else {
+    await context.octokit.issues.createComment({
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      issue_number: issueNumber,
+      body: body,
+    });
+  }
 }
