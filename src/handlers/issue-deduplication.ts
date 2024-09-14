@@ -2,9 +2,6 @@ import { IssueSimilaritySearchResult } from "../adapters/supabase/helpers/issues
 import { Context } from "../types";
 import { IssuePayload } from "../types/payload";
 
-const MATCH_THRESHOLD = 0.95;
-const WARNING_THRESHOLD = 0.75;
-
 export interface IssueGraphqlResponse {
   node: {
     title: string;
@@ -28,15 +25,15 @@ export async function issueChecker(context: Context): Promise<boolean> {
   const issue = payload.issue;
   const issueContent = issue.body + issue.title;
 
-  // Fetch all similar issues based on WARNING_THRESHOLD
-  const similarIssues = await supabase.issue.findSimilarIssues(issueContent, WARNING_THRESHOLD, issue.node_id);
+  // Fetch all similar issues based on settings.warningThreshold
+  const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
   console.log(similarIssues);
   if (similarIssues && similarIssues.length > 0) {
-    const matchIssues = similarIssues.filter((issue) => issue.similarity >= MATCH_THRESHOLD);
+    const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
 
     // Handle issues that match the MATCH_THRESHOLD (Very Similar)
     if (matchIssues.length > 0) {
-      logger.info(`Similar issue which matches more than ${MATCH_THRESHOLD} already exists`);
+      logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`);
       await octokit.issues.update({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
@@ -46,9 +43,9 @@ export async function issueChecker(context: Context): Promise<boolean> {
       });
     }
 
-    // Handle issues that match the WARNING_THRESHOLD but not the MATCH_THRESHOLD
+    // Handle issues that match the settings.warningThreshold but not the MATCH_THRESHOLD
     if (similarIssues.length > 0) {
-      logger.info(`Similar issue which matches more than ${WARNING_THRESHOLD} already exists`);
+      logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
       await handleSimilarIssuesComment(context, payload, issue.number, similarIssues);
       return true;
     }
