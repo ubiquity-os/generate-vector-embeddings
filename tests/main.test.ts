@@ -163,7 +163,10 @@ function createContextInner(
       installation: { id: 1 } as Context["payload"]["installation"],
       organization: { login: STRINGS.USER_1 } as Context["payload"]["organization"],
     } as Context["payload"],
-    config: {},
+    config: {
+      warningThreshold: 0.75,
+      matchThreshold: 0.95,
+    },
     adapters: {} as Context["adapters"],
     logger: new Logs("debug"),
     env: {} as Env,
