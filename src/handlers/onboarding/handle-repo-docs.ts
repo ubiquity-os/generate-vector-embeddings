@@ -1,7 +1,23 @@
 import { CallbackResult } from "../../proxy-callbacks";
 import { Context } from "../../types";
 
-export async function createSetupInstructions(context: Context<"push">): Promise<CallbackResult> {
+/**
+ * Will create embeddings for any .md files found in the repository.
+ * Would benefit from a structured schema, but most of our readmes are
+ * pretty uniform anyway.
+ * 
+ * Storage schema looks like:
+ * 
+ * ```json
+ * {
+ *  "sourceId": "owner/repo/file.md",
+ *  "type": "setup_instructions",
+ *  "plaintext": "file content",
+ * "metadata": {
+ * "author_association": "OWNER",
+ * "author_id": 123456,
+ */
+export async function handleRepoDocuments(context: Context<"push">): Promise<CallbackResult> {
     const {
         logger,
         octokit,
@@ -39,7 +55,7 @@ export async function createSetupInstructions(context: Context<"push">): Promise
     }
 
     /**
-     * voyageai use a special encoding schema and we cannot easily
+     * voyageai uses a special encoding schema and we cannot easily
      * use their encoder so we will just have to play it by ear for now.
      */
     for (const doc of docs) {
@@ -60,11 +76,10 @@ export async function createSetupInstructions(context: Context<"push">): Promise
         const text = docContent.data as unknown as string;
 
         const uploaded = await supabase.embeddings.createEmbedding(sourceId, "setup_instructions", text, {
-            author_association: "OWNER",
-            author_id: sender?.id,
             isPrivate: repository.private,
             repo_node_id: repository.node_id,
             repo_full_name: repository.full_name,
+            filePath: doc,
             fileChunkIndex: 0,
         });
 

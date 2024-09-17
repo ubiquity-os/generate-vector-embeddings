@@ -6,7 +6,7 @@ import { taskSimilaritySearch } from "./handlers/tasks/task-deduplication";
 import { updateCommentEmbedding } from "./handlers/comments/update-comment-embedding";
 import { updateTaskEmbedding } from "./handlers/tasks/update-task-embedding";
 import { Context, SupportedEvents, SupportedEventsU } from "./types";
-import { createSetupInstructions } from "./handlers/onboarding/create-setup-instructions";
+import { handleRepoDocuments } from "./handlers/onboarding/handle-repo-docs";
 
 export type CallbackResult = { status: 200 | 201 | 204 | 404 | 500; reason: string; content?: string | Record<string, unknown> };
 
@@ -47,7 +47,7 @@ const callbacks = {
   "issues.edited": [updateTaskEmbedding],
   "issues.deleted": [deleteTaskEmbedding],
 
-  "push": [createSetupInstructions]
+  "push": [handleRepoDocuments]
 } as ProxyCallbacks;
 
 /**
