@@ -41,7 +41,7 @@ export class Embeddings extends Super {
 
     // First Check if the comment already exists
     if (await this.getEmbedding(sourceId)) {
-      throw new Error(this.context.logger.error("Comment already exists", { sourceId })?.logMessage.raw);
+      throw new Error(this.context.logger.error("Comment already exists!", { sourceId })?.logMessage.raw);
     }
 
     const metadata = this._getMetadata(payload);
@@ -87,7 +87,7 @@ export class Embeddings extends Super {
     const toStore: CommentType = {
       source_id: sourceId,
       type,
-      plaintext: htmlToPlainText(markdownToPlainText(markdown)),
+      plaintext: htmlToPlainText(markdownToPlainText(markdown)).trim(),
       embedding: await this._embedWithVoyage(markdown),
       metadata,
       created_at: new Date().toISOString(),
@@ -115,7 +115,7 @@ export class Embeddings extends Super {
     const toStore: Omit<CommentType, "created_at"> = {
       source_id: sourceId,
       type,
-      plaintext: body ? htmlToPlainText(markdownToPlainText(body)) : null,
+      plaintext: body ? htmlToPlainText(markdownToPlainText(body)).trim() : null,
       embedding,
       metadata,
       modified_at: new Date().toISOString(),

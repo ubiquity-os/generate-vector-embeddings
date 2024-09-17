@@ -48,7 +48,30 @@ export const handlers = [
     item.body = body;
     return HttpResponse.json(item);
   }),
+  http.get("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get("source_id");
+    const sourceId = query?.split(".")[1];
+
+    const item = db.content.findMany({ where: { source_id: { equals: sourceId } } });
+    if (!item || item.length === 0) {
+      return new HttpResponse(null);
+    }
+
+    return HttpResponse.json(item[0]);
+  }),
+  http.post("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async () => {
+    return HttpResponse.json({});
+  }),
+  http.delete("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async () => {
+    return HttpResponse.json({});
+  }),
+
+  http.post("https://api.voyageai.com/v1/embeddings", async () => {
+    return HttpResponse.json({ data: [{ embedding: new Array(12).fill(0) }] });
+  }),
 ];
+
 
 async function getValue(body: ReadableStream<Uint8Array> | null) {
   if (body) {
