@@ -1,11 +1,12 @@
-import { createCommentEmbedding } from "./handlers/create-comment-embedding";
-import { addTaskEmbedding } from "./handlers/create-task-embedding";
-import { deleteCommentEmbedding } from "./handlers/delete-comment-embedding";
-import { deleteTaskEmbedding } from "./handlers/delete-task-embedding";
-import { taskSimilaritySearch } from "./handlers/task-deduplication";
-import { updateCommentEmbedding } from "./handlers/update-comment-embedding";
-import { updateTaskEmbedding } from "./handlers/update-task-embedding";
+import { createCommentEmbedding } from "./handlers/comments/create-comment-embedding";
+import { addTaskEmbedding } from "./handlers/tasks/create-task-embedding";
+import { deleteCommentEmbedding } from "./handlers/comments/delete-comment-embedding";
+import { deleteTaskEmbedding } from "./handlers/tasks/delete-task-embedding";
+import { taskSimilaritySearch } from "./handlers/tasks/task-deduplication";
+import { updateCommentEmbedding } from "./handlers/comments/update-comment-embedding";
+import { updateTaskEmbedding } from "./handlers/tasks/update-task-embedding";
 import { Context, SupportedEvents, SupportedEventsU } from "./types";
+import { createSetupInstructions } from "./handlers/onboarding/create-setup-instructions";
 
 export type CallbackResult = { status: 200 | 201 | 204 | 404 | 500; reason: string; content?: string | Record<string, unknown> };
 
@@ -45,6 +46,8 @@ const callbacks = {
   "issues.opened": [addTaskEmbedding, taskSimilaritySearch],
   "issues.edited": [updateTaskEmbedding],
   "issues.deleted": [deleteTaskEmbedding],
+
+  "push": [createSetupInstructions]
 } as ProxyCallbacks;
 
 /**

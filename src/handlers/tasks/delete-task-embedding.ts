@@ -1,5 +1,5 @@
-import { CallbackResult } from "../proxy-callbacks";
-import { Context } from "../types";
+import { CallbackResult } from "../../proxy-callbacks";
+import { Context } from "../../types";
 
 export async function deleteTaskEmbedding(context: Context<"issues.deleted">): Promise<CallbackResult> {
   const {

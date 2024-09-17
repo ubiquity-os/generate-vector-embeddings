@@ -1,5 +1,5 @@
-import { Context } from "../types";
-import { IssueSimilaritySearchResult } from "../types/embeddings";
+import { Context } from "../../types";
+import { IssueSimilaritySearchResult } from "../../types/embeddings";
 
 export interface IssueGraphqlResponse {
   node: {
@@ -88,6 +88,10 @@ async function handleSimilarIssuesComment(context: Context, issueNumber: number,
   const commentBody = issueList.map((issue) => `- [${issue.node.title}](${issue.node.url}) Similarity: ${issue.similarity}`).join("\n");
   const body = `This issue seems to be similar to the following issue(s):\n\n${commentBody}`;
 
+  if (!payload.repository.owner || !payload.repository.name) {
+    return;
+  }
+
   const existingComments = await context.octokit.issues.listComments({
     owner: payload.repository.owner.login,
     repo: payload.repository.name,
@@ -97,6 +101,10 @@ async function handleSimilarIssuesComment(context: Context, issueNumber: number,
   const existingComment = existingComments.data.find(
     (comment) => comment.body && comment.body.includes("This issue seems to be similar to the following issue(s)")
   );
+
+  if (!payload.repository.owner || !payload.repository.name) {
+    return;
+  }
 
   if (existingComment) {
     await context.octokit.issues.updateComment({

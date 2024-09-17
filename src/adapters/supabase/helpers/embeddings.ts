@@ -88,7 +88,7 @@ export class Embeddings extends Super {
       source_id: sourceId,
       type,
       plaintext: htmlToPlainText(markdownToPlainText(markdown)).trim(),
-      embedding: await this._embedWithVoyage(markdown),
+      embedding: await this._embedWithVoyage(markdown, "document"),
       metadata,
       created_at: new Date().toISOString(),
       modified_at: new Date().toISOString(),
@@ -111,8 +111,13 @@ export class Embeddings extends Super {
     if (!body) {
       throw new Error(this.context.logger.error("Markdown not found", { sourceId })?.logMessage.raw);
     }
+    const embeddingData = await this.getEmbedding(sourceId);
 
-    const embedding = await this._embedWithVoyage(body);
+    if (!embeddingData) {
+      return await this.createEmbedding(sourceId, type, body, metadata);
+    }
+
+    const embedding = await this._embedWithVoyage(body, "document");
 
     const toStore: Omit<CommentType, "created_at"> = {
       source_id: sourceId,
@@ -122,12 +127,6 @@ export class Embeddings extends Super {
       metadata,
       modified_at: new Date().toISOString(),
     };
-
-    const embeddingData = await this.getEmbedding(sourceId);
-
-    if (!embeddingData) {
-      return await this.createEmbedding(sourceId, type, body, metadata);
-    }
 
     const { error } = await this.supabase.from("content").update(toStore).eq("source_id", sourceId);
 
@@ -158,7 +157,7 @@ export class Embeddings extends Super {
   // Working with embeddings
 
   async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[]> {
-    const embedding = await this._embedWithVoyage(markdown);
+    const embedding = await this._embedWithVoyage(markdown, "query");
     const { data, error } = await this.supabase.rpc("find_similar_issues", {
       current_id: currentId,
       query_embedding: embedding,
@@ -173,7 +172,7 @@ export class Embeddings extends Super {
 
   // Helpers
 
-  private async _embedWithVoyage(text: string | null): Promise<number[]> {
+  async _embedWithVoyage(text: string | null, inputType: "document" | "query"): Promise<number[]> {
     try {
       if (text === null) {
         return new Array(VECTOR_SIZE).fill(0);
@@ -181,6 +180,7 @@ export class Embeddings extends Super {
         const response = await this._voyageClient.embed({
           input: text,
           model: "voyage-large-2-instruct",
+          inputType: inputType
         });
         return (response.data && response.data[0]?.embedding) || [];
       }
@@ -189,7 +189,7 @@ export class Embeddings extends Super {
     }
   }
 
-  private _getMetadata(payload: Context["payload"]) {
+  private _getMetadata(payload: Context<"issue_comment.edited" | "issue_comment.deleted" | "issues.edited" | "issues.deleted" | "issue_comment.created" | "issues.opened">["payload"]) {
     const {
       repository: { private: isPrivate, node_id: repoNodeId },
       issue: { node_id: issueNodeId },

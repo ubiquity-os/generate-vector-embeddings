@@ -14,6 +14,7 @@ export interface CommentMetadata {
   issue_node_id: string;
   repo_node_id: string;
   isPrivate: boolean;
+  [key: string]: any;
 }
 
 export interface IssueSimilaritySearchResult {

@@ -199,11 +199,11 @@ function createContext(
   okSpy: jest.SpyInstance;
   verboseSpy: jest.SpyInstance;
   repo: Context["payload"]["repository"];
-  issue1: Context["payload"]["issue"];
+  issue1: Context<"issue_comment.created">["payload"]["issue"];
 } {
   const repo = db.repo.findFirst({ where: { id: { equals: repoId } } }) as unknown as Context["payload"]["repository"];
   const sender = db.users.findFirst({ where: { id: { equals: payloadSenderId } } }) as unknown as Context["payload"]["sender"];
-  const issue1 = db.issue.findFirst({ where: { id: { equals: issueOne } } }) as unknown as Context["payload"]["issue"];
+  const issue1 = db.issue.findFirst({ where: { id: { equals: issueOne } } }) as unknown as Context<"issue_comment.created">["payload"]["issue"];
 
   createComment(commentBody, commentId, nodeId); // create it first then pull it from the DB and feed it to _createContext
   const comment = db.issueComments.findFirst({
@@ -237,7 +237,7 @@ function createContext(
 function createContextInner(
   repo: Context["payload"]["repository"],
   sender: Context["payload"]["sender"],
-  issue: Context["payload"]["issue"],
+  issue: Context<"issue_comment.created">["payload"]["issue"],
   comment: SupportedEvents["issue_comment.created"]["payload"]["comment"],
   eventName: SupportedEventsU
 ): Context<"issue_comment.created"> {

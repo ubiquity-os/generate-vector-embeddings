@@ -1,5 +1,5 @@
-import { CallbackResult } from "../proxy-callbacks";
-import { Context } from "../types";
+import { CallbackResult } from "../../proxy-callbacks";
+import { Context } from "../../types";
 
 export async function deleteCommentEmbedding(context: Context<"issue_comment.deleted">): Promise<CallbackResult> {
   const {
