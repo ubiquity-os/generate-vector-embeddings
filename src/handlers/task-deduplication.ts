@@ -1,6 +1,5 @@
 import { Context } from "../types";
 import { IssueSimilaritySearchResult } from "../types/embeddings";
-import { IssuePayload } from "../types/payload";
 
 export interface IssueGraphqlResponse {
   node: {
@@ -15,15 +14,15 @@ export interface IssueGraphqlResponse {
  * @param context
  * @returns true if the issue is similar to an existing issue, false otherwise
  */
-export async function issueChecker(context: Context): Promise<boolean> {
+export async function taskSimilaritySearch(context: Context<"issues.opened">): Promise<boolean> {
   const {
     logger,
     adapters: { supabase },
     octokit,
   } = context;
-  const { payload } = context as { payload: IssuePayload };
+  const { payload } = context;
   const issue = payload.issue;
-  const issueContent = issue.body + issue.title;
+  const issueContent = issue.title + "\n" + issue.body;
 
   // Fetch all similar issues based on settings.warningThreshold
   const similarIssues = await supabase.embeddings.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
@@ -45,7 +44,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
     // Handle issues that match the settings.warningThreshold but not the MATCH_THRESHOLD
     if (similarIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
-      await handleSimilarIssuesComment(context, payload, issue.number, similarIssues);
+      await handleSimilarIssuesComment(context, issue.number, similarIssues);
       return true;
     }
   }
@@ -60,7 +59,8 @@ export async function issueChecker(context: Context): Promise<boolean> {
  * @param issueNumber
  * @param similarIssues
  */
-async function handleSimilarIssuesComment(context: Context, payload: IssuePayload, issueNumber: number, similarIssues: IssueSimilaritySearchResult[]) {
+async function handleSimilarIssuesComment(context: Context, issueNumber: number, similarIssues: IssueSimilaritySearchResult[]) {
+  const { payload } = context;
   const issueList: IssueGraphqlResponse[] = await Promise.all(
     similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
       const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(

@@ -6,16 +6,18 @@ import { Context } from "./context";
  * of `context` to a specific event payload.
  */
 
-export function isIssueCommentEvent(payload: unknown): payload is Context<"issue_comment.created" | "issue_comment.edited" | "issue_comment.deleted">["payload"] {
+export function isIssueCommentEvent(
+  payload: unknown
+): payload is Context<"issue_comment.created" | "issue_comment.edited" | "issue_comment.deleted">["payload"] {
   if (typeof payload !== "object" || payload === null) {
     return false;
   }
-  return "comment" in payload
+  return "comment" in payload;
 }
 
 export function isIssueEvent(payload: unknown): payload is Context<"issues.opened" | "issues.edited" | "issues.deleted">["payload"] {
   if (typeof payload !== "object" || payload === null) {
     return false;
   }
-  return "issue" in payload
+  return "issue" in payload;
 }

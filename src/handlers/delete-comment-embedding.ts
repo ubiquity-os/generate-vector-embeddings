@@ -7,12 +7,8 @@ export async function deleteCommentEmbedding(context: Context<"issue_comment.del
     adapters: { supabase },
   } = context;
 
-  try {
-    await supabase.embeddings.deleteEmbedding(context.payload.comment.node_id);
-    logger.ok(`Successfully deleted comment!`, { commentId: context.payload.comment.node_id });
-  } catch (error) {
-    throw error;
-  }
+  await supabase.embeddings.deleteEmbedding(context.payload.comment.node_id);
+  logger.ok(`Successfully deleted comment!`, { commentId: context.payload.comment.node_id });
 
   return { status: 200, reason: "success" };
 }

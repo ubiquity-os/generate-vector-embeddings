@@ -1,5 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { db } from "./db";
+
+const FAKE_DB_URL = "https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content";
 /**
  * Intercepts the routes and returns a custom payload
  */
@@ -48,7 +50,8 @@ export const handlers = [
     item.body = body;
     return HttpResponse.json(item);
   }),
-  http.get("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async ({ request }) => {
+  // fake DB URL
+  http.get(FAKE_DB_URL, async ({ request }) => {
     const url = new URL(request.url);
     const query = url.searchParams.get("source_id");
     const sourceId = query?.split(".")[1];
@@ -60,21 +63,25 @@ export const handlers = [
 
     return HttpResponse.json(item[0]);
   }),
-  http.patch("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async ({ request }) => {
+  // fake DB URL
+  http.patch(FAKE_DB_URL, async () => {
     return HttpResponse.json({});
   }),
-  http.post("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async () => {
+  // fake DB URL
+  http.post(FAKE_DB_URL, async () => {
     return HttpResponse.json({});
   }),
-  http.delete("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async () => {
+  // fake DB URL
+  http.delete(FAKE_DB_URL, async () => {
     return HttpResponse.json({});
   }),
-
+  http.post("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/rpc/find_similar_issues", async () => {
+    return HttpResponse.json([]);
+  }),
   http.post("https://api.voyageai.com/v1/embeddings", async () => {
     return HttpResponse.json({ data: [{ embedding: new Array(12).fill(0) }] });
   }),
 ];
-
 
 async function getValue(body: ReadableStream<Uint8Array> | null) {
   if (body) {

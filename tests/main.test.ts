@@ -55,122 +55,122 @@ describe("Plugin tests", () => {
 
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully created comment!", {
-      "source_id": "test",
-      "type": "comment",
-      "plaintext": STRINGS.HELLO_WORLD,
-      "embedding": "removed for brevity",
-      "metadata": {
-        "authorAssociation": "OWNER",
-        "authorId": 1,
-        "isPrivate": false,
-        "issueNodeId": "test_issue1",
-        "repoNodeId": "test_repo1",
+      source_id: "test",
+      type: "comment",
+      plaintext: `First Issue :: ${STRINGS.HELLO_WORLD}`,
+      embedding: STRINGS.REMOVED_FOR_BREVITY,
+      metadata: {
+        authorAssociation: "OWNER",
+        authorId: 1,
+        isPrivate: false,
+        issueNodeId: "test_issue1",
+        repoNodeId: "test_repo1",
       },
-      "created_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      caller: "_Logs.<anonymous>",
-    })
+      created_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      modified_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      caller: STRINGS.LOGS_ANON,
+    });
   });
 
   it("should update the embeddings for comments", async () => {
     const { context: ctx } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test");
-    await runPlugin(ctx)
+    await runPlugin(ctx);
 
-    const { context, okSpy } = createContext("Updated Message", 1, 1, 1, 1, "test", "issue_comment.edited");
+    const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issue_comment.edited");
     await expect(runPlugin(context)).resolves.toEqual([{ status: 200, reason: "success" }]);
     const updatedComment = db.issueComments.findFirst({ where: { id: { equals: 1 } } });
-    expect(updatedComment?.body).toEqual("Updated Message");
+    expect(updatedComment?.body).toEqual(STRINGS.UPDATED_MESSAGE);
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully updated comment!", {
-      "source_id": "test",
-      "type": "comment",
-      "plaintext": "Updated Message",
-      "embedding": "removed for brevity",
-      "metadata": {
-        "authorAssociation": "OWNER",
-        "authorId": 1,
-        "issueNodeId": "test_issue1",
-        "repoNodeId": "test_repo1",
-        "isPrivate": false,
+      source_id: "test",
+      type: "comment",
+      plaintext: `First Issue :: ${STRINGS.UPDATED_MESSAGE}`,
+      embedding: STRINGS.REMOVED_FOR_BREVITY,
+      metadata: {
+        authorAssociation: "OWNER",
+        authorId: 1,
+        issueNodeId: "test_issue1",
+        repoNodeId: "test_repo1",
+        isPrivate: false,
       },
-      "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      caller: "_Logs.<anonymous>",
+      modified_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      caller: STRINGS.LOGS_ANON,
     });
   });
 
   it("should delete the embeddings for comments", async () => {
     const { context: ctx } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test");
-    await runPlugin(ctx)
+    await runPlugin(ctx);
 
-    const { context, okSpy } = createContext("Updated Message", 1, 1, 1, 1, "test", "issue_comment.deleted");
+    const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issue_comment.deleted");
     await expect(runPlugin(context)).resolves.toEqual([{ status: 200, reason: "success" }]);
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully deleted comment!", {
-      "commentId": "test",
-      caller: "_Logs.<anonymous>",
+      commentId: "test",
+      caller: STRINGS.LOGS_ANON,
     });
   });
 
   it("should create and store embeddings for issues", async () => {
-    const { context, okSpy } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", "issues.opened");
-    await expect(runPlugin(context)).resolves.toEqual([{ status: 200, reason: "success" }]);
+    const { context, okSpy } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", STRINGS.ISSUES_OPENED as SupportedEventsU);
+    const hasFoundSimilarIssues = false;
+    await expect(runPlugin(context)).resolves.toEqual([{ status: 200, reason: "success" }, hasFoundSimilarIssues]);
 
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully created issue!", {
-      "source_id": "test_issue1",
-      "type": "task",
-      "plaintext": STRINGS.HELLO_WORLD,
-      "embedding": "removed for brevity",
-      "metadata": {
-        "authorAssociation": "OWNER",
-        "authorId": 1,
-        "isPrivate": false,
-        "issueNodeId": "test_issue1",
-        "repoNodeId": "test_repo1",
+      source_id: "test_issue1",
+      type: "task",
+      plaintext: `First Issue :: ${STRINGS.HELLO_WORLD}`,
+      embedding: STRINGS.REMOVED_FOR_BREVITY,
+      metadata: {
+        authorAssociation: "OWNER",
+        authorId: 1,
+        isPrivate: false,
+        issueNodeId: "test_issue1",
+        repoNodeId: "test_repo1",
       },
-      "created_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      caller: "_Logs.<anonymous>",
+      created_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      modified_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      caller: STRINGS.LOGS_ANON,
     });
   });
 
   it("should update the embeddings for issues", async () => {
-    const { context: ctx } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", "issues.opened");
-    await runPlugin(ctx)
+    const { context: ctx } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", STRINGS.ISSUES_OPENED as SupportedEventsU);
+    await runPlugin(ctx);
 
-    const { context, okSpy } = createContext("Updated Message", 1, 1, 1, 1, "test", "issues.edited");
+    const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issues.edited");
     await expect(runPlugin(context)).resolves.toEqual([{ status: 200, reason: "success" }]);
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully updated issue!", {
-      "source_id": "test_issue1",
-      "type": "task",
-      "plaintext": "Updated Message",
-      "embedding": "removed for brevity",
-      "metadata": {
-        "authorAssociation": "OWNER",
-        "authorId": 1,
-        "issueNodeId": "test_issue1",
-        "repoNodeId": "test_repo1",
-        "isPrivate": false,
+      source_id: "test_issue1",
+      type: "task",
+      plaintext: `First Issue :: ${STRINGS.UPDATED_MESSAGE}`,
+      embedding: STRINGS.REMOVED_FOR_BREVITY,
+      metadata: {
+        authorAssociation: "OWNER",
+        authorId: 1,
+        issueNodeId: "test_issue1",
+        repoNodeId: "test_repo1",
+        isPrivate: false,
       },
-      "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      caller: "_Logs.<anonymous>",
+      modified_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      caller: STRINGS.LOGS_ANON,
     });
   });
 
   it("should delete the embeddings for issues", async () => {
-    const { context: ctx } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", "issues.opened");
-    await runPlugin(ctx)
+    const { context: ctx } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", STRINGS.ISSUES_OPENED as SupportedEventsU);
+    await runPlugin(ctx);
 
-    const { context, okSpy } = createContext("Updated Message", 1, 1, 1, 1, "test", "issues.deleted");
+    const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issues.deleted");
     await expect(runPlugin(context)).resolves.toEqual([{ status: 200, reason: "success" }]);
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully deleted issue!", {
-      "issueNodeId": "test_issue1",
-      caller: "_Logs.<anonymous>",
+      issueNodeId: "test_issue1",
+      caller: STRINGS.LOGS_ANON,
     });
   });
-
 });
 
 /**
@@ -189,7 +189,16 @@ function createContext(
   issueOne: number = 1,
   nodeId: string,
   eventName: SupportedEventsU = "issue_comment.created"
-): { context: Context<"issue_comment.created">, infoSpy: jest.SpyInstance, errorSpy: jest.SpyInstance, debugSpy: jest.SpyInstance, okSpy: jest.SpyInstance, verboseSpy: jest.SpyInstance, repo: Context["payload"]["repository"], issue1: Context["payload"]["issue"] } {
+): {
+  context: Context<"issue_comment.created">;
+  infoSpy: jest.SpyInstance;
+  errorSpy: jest.SpyInstance;
+  debugSpy: jest.SpyInstance;
+  okSpy: jest.SpyInstance;
+  verboseSpy: jest.SpyInstance;
+  repo: Context["payload"]["repository"];
+  issue1: Context["payload"]["issue"];
+} {
   const repo = db.repo.findFirst({ where: { id: { equals: repoId } } }) as unknown as Context["payload"]["repository"];
   const sender = db.users.findFirst({ where: { id: { equals: payloadSenderId } } }) as unknown as Context["payload"]["sender"];
   const issue1 = db.issue.findFirst({ where: { id: { equals: issueOne } } }) as unknown as Context["payload"]["issue"];
@@ -249,6 +258,7 @@ function createContextInner(
     logger: new Logs("debug"),
     env: {
       SUPABASE_KEY: "test",
+      // fake DB URL
       SUPABASE_URL: "https://fymwbgfvpmbhkqzlpmfdr.supabase.co/",
       VOYAGEAI_API_KEY: "test",
     } as Env,

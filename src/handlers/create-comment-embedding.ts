@@ -7,12 +7,8 @@ export async function createCommentEmbedding(context: Context<"issue_comment.cre
     adapters: { supabase },
   } = context;
 
-  try {
-    const uploaded = await supabase.embeddings.createConversationEmbeddings(context.payload.comment.node_id, context.payload, "comment");
-    logger.ok(`Successfully created comment!`, { ...uploaded, embedding: "removed for brevity" });
-  } catch (error) {
-    throw error;
-  }
+  const uploaded = await supabase.embeddings.createConversationEmbeddings(context.payload.comment.node_id, context.payload, "comment");
+  logger.ok(`Successfully created comment!`, { ...uploaded, embedding: "removed for brevity" });
 
   return { status: 200, reason: "success" };
 }

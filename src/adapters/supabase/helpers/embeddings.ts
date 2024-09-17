@@ -10,7 +10,7 @@ const VECTOR_SIZE = 1024;
 
 /**
  * Embeddings class for creating, updating, and deleting embeddings.
- * 
+ *
  * Schema is as follows:
  * - `source_id` - The unique identifier for the embedding. (e.g. comment node_id, telegram chat_id, etc.)
  * - `type` - The type of embedding. (e.g. setup_instructions, dao_info, task, comment). Consider this the category.
@@ -24,12 +24,12 @@ export class Embeddings extends Super {
   private _voyageClient: VoyageAIClient;
   constructor(voyageClient: VoyageAIClient, supabase: SupabaseClient, context: Context) {
     super(supabase, context);
-    this._voyageClient = voyageClient
+    this._voyageClient = voyageClient;
   }
 
   /**
    * Creates embeddings for both issue specifications and comments.
-   * 
+   *
    * Receives only `issue_comment.created` and `issues.opened` events,
    * i.e comments and new specifications.
    */
@@ -38,10 +38,9 @@ export class Embeddings extends Super {
     payload: Context<"issue_comment.created" | "issues.opened">["payload"],
     type: EmbeddingClass = payload.action === "opened" ? "task" : "comment"
   ) {
-
     // First Check if the comment already exists
     if (await this.getEmbedding(sourceId)) {
-      throw new Error(this.context.logger.error("Comment already exists", { sourceId })?.logMessage.raw);
+      throw new Error(this.context.logger.error("source_id already exists", { sourceId })?.logMessage.raw);
     }
 
     const metadata = this._getMetadata(payload);
@@ -57,10 +56,11 @@ export class Embeddings extends Super {
 
   /**
    * Updates embeddings for both issue specifications and comments.
-   * 
+   *
    * Receives `issue_comment.edited`, `issues.edited`, `issue_comment.deleted`, and `issues.deleted` events.
    */
-  async updateConversationEmbeddings(sourceId: string,
+  async updateConversationEmbeddings(
+    sourceId: string,
     payload: Context<"issue_comment.edited" | "issue_comment.deleted" | "issues.edited" | "issues.deleted">["payload"],
     type: EmbeddingClass = payload.action === "edited" ? "comment" : "task"
   ) {
@@ -97,10 +97,12 @@ export class Embeddings extends Super {
     const { error } = await this.supabase.from("content").insert([toStore]);
 
     if (error) {
-      throw new Error(this.context.logger.error("Error creating comment", { err: error, toStore: { ...toStore, embedding: "removed for brevity" } })?.logMessage.raw);
+      throw new Error(
+        this.context.logger.error("Error creating embedding", { err: error, toStore: { ...toStore, embedding: "removed for brevity" } })?.logMessage.raw
+      );
     }
 
-    this.context.logger.info("Comment created successfully");
+    this.context.logger.info("Embedding created successfully");
 
     return toStore;
   }
@@ -141,7 +143,7 @@ export class Embeddings extends Super {
   }
 
   async deleteEmbedding(sourceId: string) {
-    const { error } = await this.supabase.from("content").delete().eq("source_id", sourceId)
+    const { error } = await this.supabase.from("content").delete().eq("source_id", sourceId);
     if (error) {
       throw new Error(this.context.logger.error("Error deleting comment", { err: error, sourceId })?.logMessage.raw);
     }
@@ -182,13 +184,16 @@ export class Embeddings extends Super {
   }
 
   private _getMetadata(payload: Context["payload"]) {
-    const { repository: { private: isPrivate, node_id: repoNodeId }, issue: { node_id: issueNodeId } } = payload;
+    const {
+      repository: { private: isPrivate, node_id: repoNodeId },
+      issue: { node_id: issueNodeId },
+    } = payload;
     return {
       authorAssociation: this._getAuthorAssociation(payload),
       authorId: this._getAuthorId(payload),
       issueNodeId: issueNodeId,
       repoNodeId: repoNodeId,
-      isPrivate
+      isPrivate,
     };
   }
 
@@ -209,10 +214,14 @@ export class Embeddings extends Super {
   }
 
   private _getBody(payload: Context["payload"]) {
+    const body = [payload.issue.title];
+
     if (isIssueCommentEvent(payload)) {
-      return payload.comment.body;
-    } else if (isIssueEvent(payload)) {
-      return payload.issue.body;
+      body.push(payload.comment.body);
+    } else if (isIssueEvent(payload) && payload.issue.body) {
+      body.push(payload.issue.body);
     }
+
+    return body.join("\n\n :: ");
   }
 }

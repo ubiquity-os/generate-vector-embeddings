@@ -2,6 +2,7 @@ import { createCommentEmbedding } from "./handlers/create-comment-embedding";
 import { addTaskEmbedding } from "./handlers/create-task-embedding";
 import { deleteCommentEmbedding } from "./handlers/delete-comment-embedding";
 import { deleteTaskEmbedding } from "./handlers/delete-task-embedding";
+import { taskSimilaritySearch } from "./handlers/task-deduplication";
 import { updateCommentEmbedding } from "./handlers/update-comment-embedding";
 import { updateTaskEmbedding } from "./handlers/update-task-embedding";
 import { Context, SupportedEvents, SupportedEventsU } from "./types";
@@ -26,7 +27,7 @@ export type CallbackResult = { status: 200 | 201 | 204 | 404 | 500; reason: stri
  */
 
 export type ProxyCallbacks = {
-    [K in SupportedEventsU]: Array<(context: Context<K, SupportedEvents[K]>) => Promise<CallbackResult>>;
+  [K in SupportedEventsU]: Array<(context: Context<K, SupportedEvents[K]>) => Promise<CallbackResult>>;
 };
 
 /**
@@ -37,13 +38,13 @@ export type ProxyCallbacks = {
  * us to add more callbacks for a particular event without modifying the core logic.
  */
 const callbacks = {
-    "issue_comment.created": [createCommentEmbedding],
-    "issue_comment.edited": [updateCommentEmbedding],
-    "issue_comment.deleted": [deleteCommentEmbedding],
+  "issue_comment.created": [createCommentEmbedding],
+  "issue_comment.edited": [updateCommentEmbedding],
+  "issue_comment.deleted": [deleteCommentEmbedding],
 
-    "issues.opened": [addTaskEmbedding],
-    "issues.edited": [updateTaskEmbedding],
-    "issues.deleted": [deleteTaskEmbedding],
+  "issues.opened": [addTaskEmbedding, taskSimilaritySearch],
+  "issues.edited": [updateTaskEmbedding],
+  "issues.deleted": [deleteTaskEmbedding],
 } as ProxyCallbacks;
 
 /**
@@ -63,22 +64,22 @@ const callbacks = {
  * each callback.
  */
 export function proxyCallbacks(context: Context): ProxyCallbacks {
-    return new Proxy(callbacks, {
-        get(target, prop: SupportedEventsU) {
-            if (!target[prop]) {
-                context.logger.info(`No callbacks found for event ${prop}`);
-                return { status: 204, reason: "skipped" };
-            }
-            return (async () => {
-                try {
-                    return await Promise.all(target[prop].map((callback) => handleCallback(callback, context)));
-                } catch (er) {
-                    context.logger.error(`Failed to handle event ${prop}`, { er });
-                    return { status: 500, reason: "failed" };
-                }
-            })();
-        },
-    });
+  return new Proxy(callbacks, {
+    get(target, prop: SupportedEventsU) {
+      if (!target[prop]) {
+        context.logger.info(`No callbacks found for event ${prop}`);
+        return { status: 204, reason: "skipped" };
+      }
+      return (async () => {
+        try {
+          return await Promise.all(target[prop].map((callback) => handleCallback(callback, context)));
+        } catch (er) {
+          context.logger.error(`Failed to handle event ${prop}`, { er });
+          return { status: 500, reason: "failed" };
+        }
+      })();
+    },
+  });
 }
 
 /**
@@ -92,7 +93,7 @@ export function proxyCallbacks(context: Context): ProxyCallbacks {
  * matches the expected event and payload types, so this function provides a safe and
  * flexible way to handle callbacks without introducing type or logic errors.
  */
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function handleCallback(callback: Function, context: Context) {
-    return callback(context);
+  return callback(context);
 }

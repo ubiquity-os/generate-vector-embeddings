@@ -15,7 +15,7 @@ export async function runPlugin(context: Context) {
   const { logger, eventName } = context;
 
   try {
-    return proxyCallbacks(context)[eventName]
+    return proxyCallbacks(context)[eventName];
   } catch (err) {
     logger.error(`Error running plugin`, { err });
   }

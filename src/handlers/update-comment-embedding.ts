@@ -10,12 +10,8 @@ export async function updateCommentEmbedding(context: Context<"issue_comment.edi
     adapters: { supabase },
   } = context;
 
-  try {
-    const updated = await supabase.embeddings.updateConversationEmbeddings(context.payload.comment.node_id, context.payload, "comment");
-    logger.ok(`Successfully updated comment!`, { ...updated, embedding: "removed for brevity" });
-  } catch (error) {
-    throw error;
-  }
+  const updated = await supabase.embeddings.updateConversationEmbeddings(context.payload.comment.node_id, context.payload, "comment");
+  logger.ok(`Successfully updated comment!`, { ...updated, embedding: "removed for brevity" });
 
   return { status: 200, reason: "success" };
 }
