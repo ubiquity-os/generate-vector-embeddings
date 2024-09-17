@@ -1,5 +1,5 @@
-import { IssueSimilaritySearchResult } from "../adapters/supabase/helpers/issues";
 import { Context } from "../types";
+import { IssueSimilaritySearchResult } from "../types/embeddings";
 import { IssuePayload } from "../types/payload";
 
 export interface IssueGraphqlResponse {
@@ -26,8 +26,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
   const issueContent = issue.body + issue.title;
 
   // Fetch all similar issues based on settings.warningThreshold
-  const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
-  console.log(similarIssues);
+  const similarIssues = await supabase.embeddings.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
     const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
 
