@@ -1,5 +1,5 @@
 import { Context } from "../../src/types";
-import { Comment } from "../../src/adapters/supabase/helpers/comment";
+import { Comment } from "../../src/adapters/supabase/helpers/embeddings";
 import { STRINGS } from "./strings";
 
 export interface CommentMock {
