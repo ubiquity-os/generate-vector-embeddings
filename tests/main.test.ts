@@ -57,7 +57,7 @@ describe("Plugin tests", () => {
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully created comment!", {
       source_id: "test",
       type: "comment",
-      plaintext: `First Issue :: ${STRINGS.HELLO_WORLD}`,
+      plaintext: `${STRINGS.HELLO_WORLD}`,
       embedding: STRINGS.REMOVED_FOR_BREVITY,
       metadata: {
         authorAssociation: "OWNER",
@@ -84,7 +84,7 @@ describe("Plugin tests", () => {
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully updated comment!", {
       source_id: "test",
       type: "comment",
-      plaintext: `First Issue :: ${STRINGS.UPDATED_MESSAGE}`,
+      plaintext: `${STRINGS.UPDATED_MESSAGE}`,
       embedding: STRINGS.REMOVED_FOR_BREVITY,
       metadata: {
         authorAssociation: "OWNER",
@@ -120,7 +120,7 @@ describe("Plugin tests", () => {
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully created issue!", {
       source_id: "test_issue1",
       type: "task",
-      plaintext: `First Issue :: ${STRINGS.HELLO_WORLD}`,
+      plaintext: `${STRINGS.HELLO_WORLD}`,
       embedding: STRINGS.REMOVED_FOR_BREVITY,
       metadata: {
         authorAssociation: "OWNER",
@@ -145,7 +145,7 @@ describe("Plugin tests", () => {
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully updated issue!", {
       source_id: "test_issue1",
       type: "task",
-      plaintext: `First Issue :: ${STRINGS.UPDATED_MESSAGE}`,
+      plaintext: `${STRINGS.UPDATED_MESSAGE}`,
       embedding: STRINGS.REMOVED_FOR_BREVITY,
       metadata: {
         authorAssociation: "OWNER",

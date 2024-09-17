@@ -20,21 +20,27 @@ export async function taskSimilaritySearch(context: Context<"issues.opened">): P
     adapters: { supabase },
     octokit,
   } = context;
-  const { payload } = context;
-  const issue = payload.issue;
-  const issueContent = issue.title + "\n" + issue.body;
+  const {
+    payload: { issue, repository },
+  } = context;
+  const similarIssues: IssueSimilaritySearchResult[] = [];
 
-  // Fetch all similar issues based on settings.warningThreshold
-  const similarIssues = await supabase.embeddings.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
+  similarIssues.push(...(await supabase.embeddings.findSimilarIssues(issue.title, context.config.warningThreshold, issue.node_id)));
+  if (issue.body) {
+    similarIssues.push(...(await supabase.embeddings.findSimilarIssues(issue.body, context.config.warningThreshold, issue.node_id)));
+  }
+
+  logger.info(`Found ${similarIssues.length} similar issues`);
+
   if (similarIssues && similarIssues.length > 0) {
-    const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
+    const matchIssues = similarIssues.filter((issue) => issue?.similarity >= context.config.matchThreshold);
 
     // Handle issues that match the MATCH_THRESHOLD (Very Similar)
     if (matchIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`);
       await octokit.issues.update({
-        owner: payload.repository.owner.login,
-        repo: payload.repository.name,
+        owner: repository.owner.login,
+        repo: repository.name,
         issue_number: issue.number,
         state: "closed",
         state_reason: "not_planned",

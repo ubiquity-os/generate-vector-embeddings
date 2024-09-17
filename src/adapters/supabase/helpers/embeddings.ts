@@ -123,6 +123,12 @@ export class Embeddings extends Super {
       modified_at: new Date().toISOString(),
     };
 
+    const embeddingData = await this.getEmbedding(sourceId);
+
+    if (!embeddingData) {
+      return await this.createEmbedding(sourceId, type, body, metadata);
+    }
+
     const { error } = await this.supabase.from("content").update(toStore).eq("source_id", sourceId);
 
     if (error) {
@@ -136,7 +142,7 @@ export class Embeddings extends Super {
 
   async getEmbedding(sourceId: string): Promise<CommentType> {
     const { data, error } = await this.supabase.from("content").select("*").eq("source_id", sourceId).single();
-    if (error && error.message !== "No records found") {
+    if (error && error.code !== "PGRST116") {
       this.context.logger.error("Error getting comment", { err: error, sourceId });
     }
     return data;
@@ -151,7 +157,7 @@ export class Embeddings extends Super {
 
   // Working with embeddings
 
-  async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[] | null> {
+  async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[]> {
     const embedding = await this._embedWithVoyage(markdown);
     const { data, error } = await this.supabase.rpc("find_similar_issues", {
       current_id: currentId,
@@ -214,14 +220,10 @@ export class Embeddings extends Super {
   }
 
   private _getBody(payload: Context["payload"]) {
-    const body = [payload.issue.title];
-
     if (isIssueCommentEvent(payload)) {
-      body.push(payload.comment.body);
-    } else if (isIssueEvent(payload) && payload.issue.body) {
-      body.push(payload.issue.body);
+      return payload.comment.body;
+    } else if (isIssueEvent(payload)) {
+      return payload.issue.body;
     }
-
-    return body.join("\n\n :: ");
   }
 }
