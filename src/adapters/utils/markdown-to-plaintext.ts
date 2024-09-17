@@ -6,13 +6,17 @@ import plainTextPlugin from "markdown-it-plain-text";
  * @param markdown
  * @returns
  */
-export function markdownToPlainText(markdown: string | null): string | null {
+export function markdownToPlainText(markdown: string | null): string {
   if (!markdown) {
-    return markdown;
+    return "";
   }
   const md = markdownit();
   md.use(plainTextPlugin);
   md.render(markdown);
   //Package markdown-it-plain-text does not have types
   return (md as any).plainText;
+}
+
+export function htmlToPlainText(html: string): string {
+  return html.replace(/<[^>]*>?/gm, "");
 }
