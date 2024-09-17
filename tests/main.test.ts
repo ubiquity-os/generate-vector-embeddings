@@ -94,6 +94,7 @@ describe("Plugin tests", () => {
         isPrivate: false,
       },
       modified_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      created_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
       caller: STRINGS.LOGS_ANON,
     });
   });
@@ -155,6 +156,7 @@ describe("Plugin tests", () => {
         isPrivate: false,
       },
       modified_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      created_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
       caller: STRINGS.LOGS_ANON,
     });
   });
