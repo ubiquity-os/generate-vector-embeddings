@@ -60,6 +60,9 @@ export const handlers = [
 
     return HttpResponse.json(item[0]);
   }),
+  http.patch("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async ({ request }) => {
+    return HttpResponse.json({});
+  }),
   http.post("https://fymwbgfvpmbhkqzlpmfdr.supabase.co/rest/v1/content", async () => {
     return HttpResponse.json({});
   }),

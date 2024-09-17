@@ -8,7 +8,7 @@ export async function updateTaskEmbedding(context: Context<"issues.edited">): Pr
   } = context;
   try {
     const updated = await supabase.embeddings.updateConversationEmbeddings(context.payload.issue.node_id, context.payload, "task");
-    logger.ok(`Successfully updated issue!`, { updated });
+    logger.ok(`Successfully updated issue!`, { ...updated, embedding: "removed for brevity" });
   } catch (error) {
     throw error
   }

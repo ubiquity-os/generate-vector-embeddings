@@ -55,21 +55,19 @@ describe("Plugin tests", () => {
 
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully created comment!", {
-      uploaded: {
-        "source_id": "test",
-        "type": "comment",
-        "plaintext": STRINGS.HELLO_WORLD,
-        "embedding": expect.arrayContaining(Array(12).fill(0)),
-        "metadata": {
-          "authorAssociation": "OWNER",
-          "authorId": 1,
-          "isPrivate": false,
-          "issueNodeId": "test_issue1",
-          "repoNodeId": "test_repo1",
-        },
-        "created_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-        "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      "source_id": "test",
+      "type": "comment",
+      "plaintext": STRINGS.HELLO_WORLD,
+      "embedding": "removed for brevity",
+      "metadata": {
+        "authorAssociation": "OWNER",
+        "authorId": 1,
+        "isPrivate": false,
+        "issueNodeId": "test_issue1",
+        "repoNodeId": "test_repo1",
       },
+      "created_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
       caller: "_Logs.<anonymous>",
     })
   });
@@ -84,20 +82,18 @@ describe("Plugin tests", () => {
     expect(updatedComment?.body).toEqual("Updated Message");
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully updated comment!", {
-      updated: {
-        "source_id": "test",
-        "type": "comment",
-        "plaintext": "Updated Message",
-        "embedding": expect.arrayContaining(Array(12).fill(0)),
-        "metadata": {
-          "authorAssociation": "OWNER",
-          "authorId": 1,
-          "issueNodeId": "test_issue1",
-          "repoNodeId": "test_repo1",
-          "isPrivate": false,
-        },
-        "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      "source_id": "test",
+      "type": "comment",
+      "plaintext": "Updated Message",
+      "embedding": "removed for brevity",
+      "metadata": {
+        "authorAssociation": "OWNER",
+        "authorId": 1,
+        "issueNodeId": "test_issue1",
+        "repoNodeId": "test_repo1",
+        "isPrivate": false,
       },
+      "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
       caller: "_Logs.<anonymous>",
     });
   });
@@ -121,21 +117,19 @@ describe("Plugin tests", () => {
 
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully created issue!", {
-      uploaded: {
-        "source_id": "test_issue1",
-        "type": "task",
-        "plaintext": STRINGS.HELLO_WORLD,
-        "embedding": expect.arrayContaining(Array(12).fill(0)),
-        "metadata": {
-          "authorAssociation": "OWNER",
-          "authorId": 1,
-          "isPrivate": false,
-          "issueNodeId": "test_issue1",
-          "repoNodeId": "test_repo1",
-        },
-        "created_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-        "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      "source_id": "test_issue1",
+      "type": "task",
+      "plaintext": STRINGS.HELLO_WORLD,
+      "embedding": "removed for brevity",
+      "metadata": {
+        "authorAssociation": "OWNER",
+        "authorId": 1,
+        "isPrivate": false,
+        "issueNodeId": "test_issue1",
+        "repoNodeId": "test_repo1",
       },
+      "created_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
       caller: "_Logs.<anonymous>",
     });
   });
@@ -148,20 +142,18 @@ describe("Plugin tests", () => {
     await expect(runPlugin(context)).resolves.toEqual([{ status: 200, reason: "success" }]);
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully updated issue!", {
-      updated: {
-        "source_id": "test_issue1",
-        "type": "task",
-        "plaintext": "Updated Message",
-        "embedding": expect.arrayContaining(Array(12).fill(0)),
-        "metadata": {
-          "authorAssociation": "OWNER",
-          "authorId": 1,
-          "issueNodeId": "test_issue1",
-          "repoNodeId": "test_repo1",
-          "isPrivate": false,
-        },
-        "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
+      "source_id": "test_issue1",
+      "type": "task",
+      "plaintext": "Updated Message",
+      "embedding": "removed for brevity",
+      "metadata": {
+        "authorAssociation": "OWNER",
+        "authorId": 1,
+        "issueNodeId": "test_issue1",
+        "repoNodeId": "test_repo1",
+        "isPrivate": false,
       },
+      "modified_at": expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
       caller: "_Logs.<anonymous>",
     });
   });

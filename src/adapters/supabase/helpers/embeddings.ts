@@ -41,7 +41,7 @@ export class Embeddings extends Super {
 
     // First Check if the comment already exists
     if (await this.getEmbedding(sourceId)) {
-      throw new Error(this.context.logger.error("Comment already exists!", { sourceId })?.logMessage.raw);
+      throw new Error(this.context.logger.error("Comment already exists", { sourceId })?.logMessage.raw);
     }
 
     const metadata = this._getMetadata(payload);
@@ -97,7 +97,7 @@ export class Embeddings extends Super {
     const { error } = await this.supabase.from("content").insert([toStore]);
 
     if (error) {
-      throw new Error(this.context.logger.error("Error creating comment", { err: error, toStore })?.logMessage.raw);
+      throw new Error(this.context.logger.error("Error creating comment", { err: error, toStore: { ...toStore, embedding: "removed for brevity" } })?.logMessage.raw);
     }
 
     this.context.logger.info("Comment created successfully");
@@ -121,7 +121,7 @@ export class Embeddings extends Super {
       modified_at: new Date().toISOString(),
     };
 
-    const { error } = await this.supabase.from("content").upsert([toStore]);
+    const { error } = await this.supabase.from("content").update(toStore).eq("source_id", sourceId);
 
     if (error) {
       throw new Error(this.context.logger.error("Error updating comment", { err: error, toStore })?.logMessage.raw);

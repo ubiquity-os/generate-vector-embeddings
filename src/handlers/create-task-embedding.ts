@@ -9,7 +9,7 @@ export async function addTaskEmbedding(context: Context<"issues.opened">): Promi
 
   try {
     const uploaded = await supabase.embeddings.createConversationEmbeddings(context.payload.issue.node_id, context.payload, "task");
-    logger.ok(`Successfully created issue!`, { uploaded });
+    logger.ok(`Successfully created issue!`, { ...uploaded, embedding: "removed for brevity" });
   } catch (error) {
     throw error;
   }
