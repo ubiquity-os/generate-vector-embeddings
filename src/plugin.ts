@@ -14,6 +14,7 @@ import { deleteIssues } from "./handlers/delete-issue";
 import { addIssue } from "./handlers/add-issue";
 import { updateIssue } from "./handlers/update-issue";
 import { issueChecker } from "./handlers/issue-deduplication";
+import { labelAdded } from "./handlers/label-added";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -40,6 +41,8 @@ export async function runPlugin(context: Context) {
       case "issues.deleted":
         return await deleteIssues(context);
     }
+  } else if (eventName == "issues.labeled") {
+    await labelAdded(context);
   } else {
     logger.error(`Unsupported event: ${eventName}`);
   }
