@@ -77,13 +77,12 @@ export class Issues extends SuperSupabase {
     }
   }
 
-  async getIssue(issueNodeId: string): Promise<IssueType | null> {
+  async getIssue(issueNodeId: string): Promise<IssueType[] | null> {
     const { data, error } = await this.supabase
       .from("issues") // Provide the second type argument
       .select("*")
       .eq("id", issueNodeId)
-      .returns<IssueType>();
-
+      .returns<IssueType[]>();
     if (error) {
       this.context.logger.error("Error getting issue", error);
       return null;
@@ -103,5 +102,12 @@ export class Issues extends SuperSupabase {
       return [];
     }
     return data;
+  }
+
+  async updatePayload(issueNodeId: string, payload: Record<string, unknown>) {
+    const { error } = await this.supabase.from("issues").update({ payload }).eq("id", issueNodeId);
+    if (error) {
+      this.context.logger.error("Error updating issue payload", error);
+    }
   }
 }

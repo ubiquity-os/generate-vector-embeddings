@@ -14,7 +14,8 @@ import { deleteIssues } from "./handlers/delete-issue";
 import { addIssue } from "./handlers/add-issue";
 import { updateIssue } from "./handlers/update-issue";
 import { issueChecker } from "./handlers/issue-deduplication";
-import { labelAdded } from "./handlers/label-added";
+import { issueMatching } from "./handlers/issue-matching";
+import { updateAssignees } from "./handlers/issue-assignees-changed";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -34,15 +35,19 @@ export async function runPlugin(context: Context) {
     switch (eventName) {
       case "issues.opened":
         await issueChecker(context);
-        return await addIssue(context);
+        await addIssue(context);
+        return await issueMatching(context);
       case "issues.edited":
         await issueChecker(context);
-        return await updateIssue(context);
+        await updateIssue(context);
+        return await issueMatching(context);
       case "issues.deleted":
         return await deleteIssues(context);
     }
   } else if (eventName == "issues.labeled") {
-    await labelAdded(context);
+    await issueMatching(context);
+  } else if (eventName == "issues.assigned" || eventName == "issues.unassigned") {
+    await updateAssignees(context);
   } else {
     logger.error(`Unsupported event: ${eventName}`);
   }
