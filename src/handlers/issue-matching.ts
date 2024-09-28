@@ -24,6 +24,17 @@ export interface IssueGraphqlResponse {
   similarity: number;
 }
 
+const commentBuilder = (matchResultArray: Map<string, Array<string>>): string => {
+  const commentLines: string[] = [">[!NOTE]", ">The following contributors may be suitable for this task:"];
+  matchResultArray.forEach((issues, assignee) => {
+    commentLines.push(`>### [${assignee}](https://www.github.com/${assignee})`);
+    issues.forEach((issue) => {
+      commentLines.push(issue);
+    });
+  });
+  return commentLines.join("\n");
+};
+
 export async function issueMatching(context: Context) {
   const {
     logger,
@@ -33,7 +44,7 @@ export async function issueMatching(context: Context) {
   const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
   const issueContent = issue.body + issue.title;
-  const commentStart = "The following users have completed similar tasks to this issue:";
+  const commentStart = ">The following contributors may be suitable for this task:";
 
   // On Adding the labels to the issue, the bot should
   // create a new comment with users who completed task most similar to the issue
@@ -80,17 +91,16 @@ export async function issueMatching(context: Context) {
         const assignees = issue.node.assignees.nodes;
         assignees.forEach((assignee) => {
           const similarityPercentage = Math.round(issue.similarity * 100);
-          const githubUserLink = assignee.url.replace(/https?:\/\/github.com/, "https://www.github.com");
           const issueLink = issue.node.url.replace(/https?:\/\/github.com/, "https://www.github.com");
           if (matchResultArray.has(assignee.login)) {
             matchResultArray
               .get(assignee.login)
               ?.push(
-                `## [${assignee.login}](${githubUserLink})\n- [${issue.node.repository.owner.login}/${issue.node.repository.name}#${issue.node.url.split("/").pop()}](${issueLink}) ${similarityPercentage}% Match`
+                `> \`${similarityPercentage}% Match\` [${issue.node.repository.owner.login}/${issue.node.repository.name}#${issue.node.url.split("/").pop()}](${issueLink})`
               );
           } else {
             matchResultArray.set(assignee.login, [
-              `## [${assignee.login}](${githubUserLink})\n- [${issue.node.repository.owner.login}/${issue.node.repository.name}#${issue.node.url.split("/").pop()}](${issueLink}) ${similarityPercentage}% Match`,
+              `> \`${similarityPercentage}% Match\` [${issue.node.repository.owner.login}/${issue.node.repository.name}#${issue.node.url.split("/").pop()}](${issueLink})`,
             ]);
           }
         });
@@ -103,8 +113,7 @@ export async function issueMatching(context: Context) {
       issue_number: issue.number,
     });
     //Check if the comment already exists
-    const existingComment = listIssues.data.find((comment) => comment.body && comment.body.startsWith(commentStart));
-
+    const existingComment = listIssues.data.find((comment) => comment.body && comment.body.includes(">[!NOTE]" + "\n" + commentStart));
     //Check if matchResultArray is empty
     if (matchResultArray && matchResultArray.size === 0) {
       if (existingComment) {
@@ -118,34 +127,24 @@ export async function issueMatching(context: Context) {
       logger.debug("No similar issues found");
       return;
     }
-
+    const comment = commentBuilder(matchResultArray);
     if (existingComment) {
       await context.octokit.issues.updateComment({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         comment_id: existingComment.id,
-        body:
-          commentStart +
-          "\n\n" +
-          Array.from(matchResultArray.values())
-            .map((arr) => arr.join("\n"))
-            .join("\n"),
+        body: comment,
       });
     } else {
       await context.octokit.issues.createComment({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         issue_number: payload.issue.number,
-        body:
-          commentStart +
-          "\n\n" +
-          Array.from(matchResultArray.values())
-            .map((arr) => arr.join("\n"))
-            .join("\n"),
+        body: comment,
       });
     }
   }
 
-  logger.ok(`Successfully created issue!`);
-  logger.debug(`Exiting addIssue`);
+  logger.ok(`Successfully created issue comment!`);
+  logger.debug(`Exiting issueMatching handler`);
 }
