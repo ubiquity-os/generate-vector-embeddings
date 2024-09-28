@@ -15,7 +15,6 @@ import { addIssue } from "./handlers/add-issue";
 import { updateIssue } from "./handlers/update-issue";
 import { issueChecker } from "./handlers/issue-deduplication";
 import { issueMatching } from "./handlers/issue-matching";
-import { updateAssignees } from "./handlers/issue-assignees-changed";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -45,9 +44,7 @@ export async function runPlugin(context: Context) {
         return await deleteIssues(context);
     }
   } else if (eventName == "issues.labeled") {
-    await issueMatching(context);
-  } else if (eventName == "issues.assigned" || eventName == "issues.unassigned") {
-    await updateAssignees(context);
+    return await issueMatching(context);
   } else {
     logger.error(`Unsupported event: ${eventName}`);
   }
