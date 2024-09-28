@@ -42,11 +42,8 @@ export async function issueMatching(context: Context) {
   const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.jobMatchingThreshold, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
     // Find the most similar issue and the users who completed the task
-    console.log(similarIssues);
     similarIssues.sort((a, b) => b.similarity - a.similarity);
     const fetchPromises = similarIssues.map(async (issue) => {
-      logger.info("Issue ID: " + issue.issue_id);
-      logger.info("Before query");
       const issueObject: IssueGraphqlResponse = await context.octokit.graphql(
         `query ($issueNodeId: ID!) {
             node(id: $issueNodeId) {
