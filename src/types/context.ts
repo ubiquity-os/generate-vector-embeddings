@@ -10,7 +10,14 @@ import { createAdapters } from "../adapters";
  *
  * ubiquity:listeners: ["issue_comment.created", ...]
  */
-export type SupportedEventsU = "issue_comment.created" | "issue_comment.deleted" | "issue_comment.edited";
+export type SupportedEventsU =
+  | "issue_comment.created"
+  | "issue_comment.deleted"
+  | "issue_comment.edited"
+  | "issues.opened"
+  | "issues.edited"
+  | "issues.deleted"
+  | "issues.labeled";
 
 export type SupportedEvents = {
   [K in SupportedEventsU]: K extends WebhookEventName ? WebhookEvent<K> : never;

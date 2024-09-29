@@ -1,24 +1,21 @@
 import { Context } from "../types";
+import { CommentPayload } from "../types/payload";
 
 export async function updateComment(context: Context) {
   const {
     logger,
-    payload,
     adapters: { supabase },
   } = context;
-
-  const sender = payload.comment.user?.login;
-  const repo = payload.repository.name;
-  const issueNumber = payload.issue.number;
-  const owner = payload.repository.owner.login;
-  const body = payload.comment.body;
-
-  // Log the payload
-  logger.debug(`Executing updateComment:`, { sender, repo, issueNumber, owner });
-
+  const { payload } = context as { payload: CommentPayload };
+  const nodeId = payload.comment.node_id;
+  const isPrivate = payload.repository.private;
+  const markdown = payload.comment.body || null;
   // Fetch the previous comment and update it in the db
   try {
-    await supabase.comment.updateComment(body, payload.comment.id);
+    if (!markdown) {
+      throw new Error("Comment body is empty");
+    }
+    await supabase.comment.updateComment(markdown, nodeId, payload, isPrivate);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error updating comment:`, { error: error, stack: error.stack });
@@ -30,5 +27,5 @@ export async function updateComment(context: Context) {
   }
 
   logger.ok(`Successfully updated comment!`);
-  logger.verbose(`Exiting updateComment`);
+  logger.debug(`Exiting updateComment`);
 }

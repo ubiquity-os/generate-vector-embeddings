@@ -1,23 +1,16 @@
 import { Context } from "../types";
+import { CommentPayload } from "../types/payload";
 
 export async function deleteComment(context: Context) {
   const {
     logger,
-    payload,
     adapters: { supabase },
   } = context;
+  const { payload } = context as { payload: CommentPayload };
+  const nodeId = payload.comment.node_id;
 
-  const sender = payload.comment.user?.login;
-  const repo = payload.repository.name;
-  const issueNumber = payload.issue.number;
-  const owner = payload.repository.owner.login;
-
-  // Log the payload
-  logger.debug(`Executing deleteComment:`, { sender, repo, issueNumber, owner });
-
-  // Add the comment to the database
   try {
-    await supabase.comment.deleteComment(payload.comment.id);
+    await supabase.comment.deleteComment(nodeId);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error deleting comment:`, { error: error, stack: error.stack });
@@ -29,5 +22,5 @@ export async function deleteComment(context: Context) {
   }
 
   logger.ok(`Successfully deleted comment!`);
-  logger.verbose(`Exiting deleteComments`);
+  logger.debug(`Exiting deleteComments`);
 }

@@ -1,25 +1,23 @@
 import { Context } from "../types";
+import { CommentPayload } from "../types/payload";
 
 export async function addComments(context: Context) {
   const {
     logger,
-    payload,
     adapters: { supabase },
   } = context;
+  const { payload } = context as { payload: CommentPayload };
+  const markdown = payload.comment.body;
+  const authorId = payload.comment.user?.id || -1;
+  const nodeId = payload.comment.node_id;
+  const isPrivate = payload.repository.private;
+  const issueId = payload.issue.node_id;
 
-  const sender = payload.comment.user?.login;
-  const repo = payload.repository.name;
-  const issueNumber = payload.issue.number;
-  const issueBody = payload.issue.body || "";
-  const owner = payload.repository.owner.login;
-  const body = payload.comment.body;
-
-  // Log the payload
-  logger.info(`Executing addComments:`, { sender, repo, issueNumber, owner });
-
-  // Add the comment to the database
   try {
-    await supabase.comment.createComment(body, payload.comment.id, issueBody);
+    if (!markdown) {
+      throw new Error("Comment body is empty");
+    }
+    await supabase.comment.createComment(markdown, nodeId, authorId, payload, isPrivate, issueId);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error creating comment:`, { error: error, stack: error.stack });
@@ -31,5 +29,5 @@ export async function addComments(context: Context) {
   }
 
   logger.ok(`Successfully created comment!`);
-  logger.verbose(`Exiting addComments`);
+  logger.debug(`Exiting addComments`);
 }

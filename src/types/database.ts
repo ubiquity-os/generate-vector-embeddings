@@ -5,22 +5,81 @@ export type Database = {
     Tables: {
       issue_comments: {
         Row: {
-          commentbody: string;
+          author_id: string;
+          created_at: string;
           embedding: string;
-          id: number;
-          issuebody: string | null;
+          id: string;
+          issue_id: string | null;
+          markdown: string | null;
+          modified_at: string;
+          payloadobject: Json | null;
+          plaintext: string | null;
+          type: string;
         };
         Insert: {
-          commentbody: string;
+          author_id: string;
+          created_at?: string;
           embedding: string;
-          id: number;
-          issuebody?: string | null;
+          id: string;
+          issue_id?: string | null;
+          markdown?: string | null;
+          modified_at?: string;
+          payloadobject?: Json | null;
+          plaintext?: string | null;
+          type: string;
         };
         Update: {
-          commentbody?: string;
+          author_id?: string;
+          created_at?: string;
           embedding?: string;
-          id?: number;
-          issuebody?: string | null;
+          id?: string;
+          issue_id?: string | null;
+          markdown?: string | null;
+          modified_at?: string;
+          payloadobject?: Json | null;
+          plaintext?: string | null;
+          type?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "issue_comments_issue_id_fkey";
+            columns: ["issue_id"];
+            isOneToOne: false;
+            referencedRelation: "issues";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      issues: {
+        Row: {
+          created_at: string;
+          embedding: string;
+          id: string;
+          markdown: string | null;
+          modified_at: string;
+          payload: Json | null;
+          plaintext: string | null;
+          type: string;
+        };
+        Insert: {
+          created_at?: string;
+          embedding: string;
+          id: string;
+          markdown?: string | null;
+          modified_at?: string;
+          payload?: Json | null;
+          plaintext?: string | null;
+          type?: string;
+        };
+        Update: {
+          created_at?: string;
+          embedding?: string;
+          id?: string;
+          markdown?: string | null;
+          modified_at?: string;
+          payload?: Json | null;
+          plaintext?: string | null;
+          type?: string;
         };
         Relationships: [];
       };
@@ -42,6 +101,17 @@ export type Database = {
             };
             Returns: unknown;
           };
+      find_similar_issues: {
+        Args: {
+          query_embedding: string;
+          threshold: number;
+        };
+        Returns: {
+          id: number;
+          issue: string;
+          similarity: number;
+        }[];
+      };
       halfvec_avg: {
         Args: {
           "": number[];

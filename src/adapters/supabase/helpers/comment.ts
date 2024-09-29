@@ -1,10 +1,14 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { SuperSupabase } from "./supabase";
 import { Context } from "../../../types/context";
+import { markdownToPlainText } from "../../utils/markdown-to-plaintext";
 
 export interface CommentType {
-  id: number;
-  body: string;
+  id: string;
+  markdown?: string;
+  author_id: number;
+  created_at: string;
+  modified_at: string;
   embedding: number[];
 }
 
@@ -13,9 +17,16 @@ export class Comment extends SuperSupabase {
     super(supabase, context);
   }
 
-  async createComment(commentBody: string, commentId: number, issueBody: string) {
+  async createComment(
+    markdown: string | null,
+    commentNodeId: string,
+    authorId: number,
+    payload: Record<string, unknown> | null,
+    isPrivate: boolean,
+    issueId: string
+  ) {
     //First Check if the comment already exists
-    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentId);
+    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error creating comment", error);
       return;
@@ -25,10 +36,16 @@ export class Comment extends SuperSupabase {
       return;
     } else {
       //Create the embedding for this comment
-      const embedding = await this.context.adapters.openai.embedding.createEmbedding(commentBody);
+      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+      let plaintext: string | null = markdownToPlainText(markdown || "");
+      if (isPrivate) {
+        markdown = null as string | null;
+        payload = null as Record<string, unknown> | null;
+        plaintext = null as string | null;
+      }
       const { error } = await this.supabase
         .from("issue_comments")
-        .insert([{ id: commentId, commentbody: commentBody, issuebody: issueBody, embedding: embedding }]);
+        .insert([{ id: commentNodeId, markdown, plaintext, author_id: authorId, payload, embedding: embedding, issue_id: issueId }]);
       if (error) {
         this.context.logger.error("Error creating comment", error);
         return;
@@ -37,25 +54,34 @@ export class Comment extends SuperSupabase {
     this.context.logger.info("Comment created successfully");
   }
 
-  async updateComment(commentBody: string, commentId: number) {
+  async updateComment(markdown: string | null, commentNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean) {
     //Create the embedding for this comment
-    const embedding = Array.from(await this.context.adapters.openai.embedding.createEmbedding(commentBody));
-    const { error } = await this.supabase.from("issue_comments").update({ commentbody: commentBody, embedding: embedding }).eq("id", commentId);
+    const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(markdown));
+    let plaintext: string | null = markdownToPlainText(markdown || "");
+    if (isPrivate) {
+      markdown = null as string | null;
+      payload = null as Record<string, unknown> | null;
+      plaintext = null as string | null;
+    }
+    const { error } = await this.supabase
+      .from("issue_comments")
+      .update({ markdown, plaintext, embedding: embedding, payload, modified_at: new Date() })
+      .eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error updating comment", error);
     }
   }
 
-  async getComment(commentId: number): Promise<CommentType[] | null> {
-    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentId);
+  async getComment(commentNodeId: string): Promise<CommentType[] | null> {
+    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error getting comment", error);
     }
     return data;
   }
 
-  async deleteComment(commentId: number) {
-    const { error } = await this.supabase.from("issue_comments").delete().eq("id", commentId);
+  async deleteComment(commentNodeId: string) {
+    const { error } = await this.supabase.from("issue_comments").delete().eq("id", commentNodeId);
     if (error) {
       this.context.logger.error("Error deleting comment", error);
     }

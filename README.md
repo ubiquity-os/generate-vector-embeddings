@@ -7,14 +7,18 @@ This is a plugin for [Ubiquibot](https://github.com/ubiquity/ubiquibot-kernel). 
 To set up the `.dev.vars` file, you will need to provide the following variables:
 - `SUPABASE_URL`: The URL for your Supabase instance.
 - `SUPABASE_KEY`: The key for your Supabase instance.
-- `OPENAI_API_KEY`: The API key for OpenAI.
+- `VOYAGEAI_API_KEY`: The API key for Voyage.
 
 ## Usage
-- Add the following to your `.ubiquibot.config.yml` file with the appropriate URL:
-```javascript
-  -plugin: http://127.0.0.1:4000
-      runsOn: [ "issue_comment.created", "issue_comment.edited", "issue_comment.deleted" ]
+- Add the following to your `.ubiquibot-config.yml` file with the appropriate URL:
+```yaml
+- plugin: ubiquity-os-marketplace/generate-vector-embeddings
+  with:
+    matchThreshold: 0.95
+    warningThreshold: 0.75
+    jobMatchingThreshold: 0.75
 ```
+
 
 ## Testing Locally
 - Run `yarn install` to install the dependencies.

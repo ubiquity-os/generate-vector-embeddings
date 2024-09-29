@@ -1,5 +1,4 @@
 import { db } from "./db";
-import issueTemplate from "./issue-template";
 import { STRINGS } from "./strings";
 import usersGet from "./users-get.json";
 
@@ -12,34 +11,93 @@ import usersGet from "./users-get.json";
  * Here is where you create issues, commits, pull requests, etc.
  */
 export async function setupTests() {
+  // Insert users
   for (const item of usersGet) {
-    db.users.create(item);
+    db.users.create({
+      login: item.login,
+      id: item.id,
+    });
   }
 
+  // Insert repository
   db.repo.create({
     id: 1,
     name: STRINGS.TEST_REPO,
+    full_name: `${STRINGS.USER_1}/${STRINGS.TEST_REPO}`,
+    private: false,
     owner: {
       login: STRINGS.USER_1,
       id: 1,
+      avatar_url: "",
     },
-    issues: [],
+  });
+
+  // Insert issues
+  db.issue.create({
+    id: 1,
+    number: 1,
+    title: "First Issue",
+    body: "This is the body of the first issue.",
+    user: {
+      login: STRINGS.USER_1,
+      id: 1,
+    },
+    author_association: "OWNER",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    comments: 0,
+    labels: [],
+    state: "open",
+    locked: false,
+    reactions: {
+      url: "",
+      total_count: 0,
+      "+1": 0,
+      "-1": 0,
+      laugh: 0,
+      hooray: 0,
+      confused: 0,
+      heart: 0,
+      rocket: 0,
+      eyes: 0,
+    },
+    timeline_url: "",
   });
 
   db.issue.create({
-    ...issueTemplate,
-  });
-
-  db.issue.create({
-    ...issueTemplate,
     id: 2,
     number: 2,
+    title: "Second Issue",
+    body: "This is the body of the second issue.",
+    user: {
+      login: STRINGS.USER_1,
+      id: 1,
+    },
+    author_association: "OWNER",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    comments: 0,
     labels: [],
+    state: "open",
+    locked: false,
+    reactions: {
+      url: "",
+      total_count: 0,
+      "+1": 0,
+      "-1": 0,
+      laugh: 0,
+      hooray: 0,
+      confused: 0,
+      heart: 0,
+      rocket: 0,
+      eyes: 0,
+    },
+    timeline_url: "",
   });
 }
 
-export function createComment(comment: string, commentId: number) {
-  const isComment = db.issueComments.findFirst({
+export function createComment(comment: string, commentId: number, nodeId: string) {
+  const existingComment = db.issueComments.findFirst({
     where: {
       id: {
         equals: commentId,
@@ -47,7 +105,7 @@ export function createComment(comment: string, commentId: number) {
     },
   });
 
-  if (isComment) {
+  if (existingComment) {
     db.issueComments.update({
       where: {
         id: {
@@ -56,6 +114,7 @@ export function createComment(comment: string, commentId: number) {
       },
       data: {
         body: comment,
+        updated_at: new Date().toISOString(),
       },
     });
   } else {
@@ -63,10 +122,14 @@ export function createComment(comment: string, commentId: number) {
       id: commentId,
       body: comment,
       issue_number: 1,
+      node_id: nodeId,
       user: {
         login: STRINGS.USER_1,
         id: 1,
       },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      author_association: "OWNER",
     });
   }
 }
