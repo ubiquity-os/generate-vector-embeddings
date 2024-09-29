@@ -12,9 +12,8 @@ export type Database = {
           issue_id: string | null;
           markdown: string | null;
           modified_at: string;
-          payloadobject: Json | null;
+          payload: Json | null;
           plaintext: string | null;
-          type: string;
         };
         Insert: {
           author_id: string;
@@ -24,9 +23,8 @@ export type Database = {
           issue_id?: string | null;
           markdown?: string | null;
           modified_at?: string;
-          payloadobject?: Json | null;
+          payload?: Json | null;
           plaintext?: string | null;
-          type: string;
         };
         Update: {
           author_id?: string;
@@ -36,9 +34,8 @@ export type Database = {
           issue_id?: string | null;
           markdown?: string | null;
           modified_at?: string;
-          payloadobject?: Json | null;
+          payload?: Json | null;
           plaintext?: string | null;
-          type?: string;
         };
         Relationships: [
           {
@@ -52,6 +49,7 @@ export type Database = {
       };
       issues: {
         Row: {
+          author_id: string;
           created_at: string;
           embedding: string;
           id: string;
@@ -59,9 +57,9 @@ export type Database = {
           modified_at: string;
           payload: Json | null;
           plaintext: string | null;
-          type: string;
         };
         Insert: {
+          author_id: string;
           created_at?: string;
           embedding: string;
           id: string;
@@ -69,9 +67,9 @@ export type Database = {
           modified_at?: string;
           payload?: Json | null;
           plaintext?: string | null;
-          type?: string;
         };
         Update: {
+          author_id?: string;
           created_at?: string;
           embedding?: string;
           id?: string;
@@ -79,7 +77,6 @@ export type Database = {
           modified_at?: string;
           payload?: Json | null;
           plaintext?: string | null;
-          type?: string;
         };
         Relationships: [];
       };
@@ -103,12 +100,13 @@ export type Database = {
           };
       find_similar_issues: {
         Args: {
+          current_id: string;
           query_embedding: string;
           threshold: number;
         };
         Returns: {
-          id: number;
-          issue: string;
+          issue_id: string;
+          issue_plaintext: string;
           similarity: number;
         }[];
       };
