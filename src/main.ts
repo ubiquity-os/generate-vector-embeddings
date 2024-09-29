@@ -10,7 +10,7 @@ import { plugin } from "./plugin";
  */
 export async function run() {
   const payload = github.context.payload.inputs;
-  const env = Value.Decode(envSchema, payload.env);
+  const env = Value.Decode(envSchema, process.env);
   const settings = Value.Decode(pluginSettingsSchema, Value.Default(pluginSettingsSchema, JSON.parse(payload.settings)));
 
   if (!pluginSettingsValidator.test(settings)) {
