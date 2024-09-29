@@ -27,7 +27,6 @@ export async function issueChecker(context: Context): Promise<boolean> {
 
   // Fetch all similar issues based on settings.warningThreshold
   const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
-  console.log(similarIssues);
   if (similarIssues && similarIssues.length > 0) {
     const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
 

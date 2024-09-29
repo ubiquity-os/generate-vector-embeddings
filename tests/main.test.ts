@@ -166,6 +166,7 @@ function createContextInner(
     config: {
       warningThreshold: 0.75,
       matchThreshold: 0.95,
+      jobMatchingThreshold: 0.95,
     },
     adapters: {} as Context["adapters"],
     logger: new Logs("debug"),

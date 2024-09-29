@@ -22,8 +22,9 @@ export const pluginSettingsSchema = T.Object(
   {
     matchThreshold: T.Number(),
     warningThreshold: T.Number(),
+    jobMatchingThreshold: T.Number(),
   },
-  { default: { matchThreshold: 0.95, warningThreshold: 0.75 } }
+  { default: { matchThreshold: 0.95, warningThreshold: 0.75, jobMatchingThreshold: 0.75 } }
 );
 
 export const pluginSettingsValidator = new StandardValidator(pluginSettingsSchema);
