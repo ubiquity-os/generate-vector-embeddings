@@ -13,10 +13,12 @@ This is a plugin for [Ubiquibot](https://github.com/ubiquity/ubiquibot-kernel). 
 ## Usage
 
 - Add the following to your `.ubiquibot-config.yml` file with the appropriate URL:
-
-```javascript
-  -plugin: http://127.0.0.1:4000
-      runsOn: [ "issue_comment.created", "issue_comment.edited", "issue_comment.deleted" , "issues.opened", "issues.edited", "issues.deleted"]
+```yaml
+- plugin: https://ubiquity-os-comment-vector-embeddings-main.ubiquity.workers.dev
+  with:
+    matchThreshold: 0.95
+    warningThreshold: 0.75
+    jobMatchingThreshold: 0.75
 ```
 
 ## Testing Locally

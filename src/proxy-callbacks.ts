@@ -2,6 +2,7 @@ import { createCommentEmbedding } from "./handlers/create-comment-embedding";
 import { addTaskEmbedding } from "./handlers/create-task-embedding";
 import { deleteCommentEmbedding } from "./handlers/delete-comment-embedding";
 import { deleteTaskEmbedding } from "./handlers/delete-task-embedding";
+import { issueMatching } from "./handlers/issue-matching";
 import { taskSimilaritySearch } from "./handlers/task-deduplication";
 import { updateCommentEmbedding } from "./handlers/update-comment-embedding";
 import { updateTaskEmbedding } from "./handlers/update-task-embedding";
@@ -42,10 +43,34 @@ const callbacks = {
   "issue_comment.edited": [updateCommentEmbedding],
   "issue_comment.deleted": [deleteCommentEmbedding],
 
-  "issues.opened": [addTaskEmbedding, taskSimilaritySearch],
-  "issues.edited": [updateTaskEmbedding],
+  "issues.opened": [addTaskEmbedding, taskSimilaritySearch, issueMatching],
+  "issues.edited": [updateTaskEmbedding, taskSimilaritySearch, issueMatching],
   "issues.deleted": [deleteTaskEmbedding],
 } as ProxyCallbacks;
+
+
+/**
+ * 
+
+  } else if (isIssueEvent(context)) {
+    switch (eventName) {
+      case "issues.opened":
+        await issueChecker(context);
+        await addIssue(context);
+        return await issueMatching(context);
+      case "issues.edited":
+        await issueChecker(context);
+        await updateIssue(context);
+        return await issueMatching(context);
+      case "issues.deleted":
+        return await deleteIssues(context);
+    }
+  } else if (eventName == "issues.labeled") {
+    return await issueMatching(context);
+  } else {
+    logger.error(`Unsupported event: ${eventName}`);
+ * @returns 
+ */
 
 /**
  * The `proxyCallbacks` function returns a Proxy object that intercepts access to the

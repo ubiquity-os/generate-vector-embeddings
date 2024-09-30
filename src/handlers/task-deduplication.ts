@@ -32,6 +32,7 @@ export async function taskSimilaritySearch(context: Context<"issues.opened">): P
 
   logger.info(`Found ${similarIssues.length} similar issues`);
 
+  // Fetch all similar issues based on settings.warningThreshold
   if (similarIssues && similarIssues.length > 0) {
     const matchIssues = similarIssues.filter((issue) => issue?.similarity >= context.config.matchThreshold);
 
