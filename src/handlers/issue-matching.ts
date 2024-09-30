@@ -1,5 +1,5 @@
+import { CallbackResult } from "../proxy-callbacks";
 import { Context } from "../types";
-import { IssuePayload } from "../types/payload";
 
 export interface IssueGraphqlResponse {
   node: {
@@ -35,13 +35,13 @@ const commentBuilder = (matchResultArray: Map<string, Array<string>>): string =>
   return commentLines.join("\n");
 };
 
-export async function issueMatching(context: Context) {
+export async function issueMatching(context: Context<"issues.opened" | "issues.edited">): Promise<CallbackResult> {
   const {
     logger,
     adapters: { supabase },
     octokit,
   } = context;
-  const { payload } = context as { payload: IssuePayload };
+  const { payload } = context;
   const issue = payload.issue;
   const issueContent = issue.body + issue.title;
   const commentStart = ">The following contributors may be suitable for this task:";
@@ -50,7 +50,7 @@ export async function issueMatching(context: Context) {
   // create a new comment with users who completed task most similar to the issue
   // if the comment already exists, it should update the comment with the new users
   const matchResultArray: Map<string, Array<string>> = new Map();
-  const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.jobMatchingThreshold, issue.node_id);
+  const similarIssues = await supabase.embeddings.findSimilarIssues(issueContent, context.config.jobMatchingThreshold, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
     // Find the most similar issue and the users who completed the task
     similarIssues.sort((a, b) => b.similarity - a.similarity);
@@ -125,7 +125,7 @@ export async function issueMatching(context: Context) {
         });
       }
       logger.debug("No similar issues found");
-      return;
+      return { status: 200 };
     }
     const comment = commentBuilder(matchResultArray);
     if (existingComment) {
@@ -147,4 +147,6 @@ export async function issueMatching(context: Context) {
 
   logger.ok(`Successfully created issue comment!`);
   logger.debug(`Exiting issueMatching handler`);
+
+  return { status: 200 };
 }

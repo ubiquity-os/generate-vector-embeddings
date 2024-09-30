@@ -1,3 +1,4 @@
+import { CallbackResult } from "../proxy-callbacks";
 import { Context } from "../types";
 import { IssueSimilaritySearchResult } from "../types/embeddings";
 
@@ -14,7 +15,7 @@ export interface IssueGraphqlResponse {
  * @param context
  * @returns true if the issue is similar to an existing issue, false otherwise
  */
-export async function taskSimilaritySearch(context: Context<"issues.opened">): Promise<boolean> {
+export async function taskSimilaritySearch(context: Context<"issues.opened">): Promise<CallbackResult> {
   const {
     logger,
     adapters: { supabase },
@@ -52,11 +53,11 @@ export async function taskSimilaritySearch(context: Context<"issues.opened">): P
     if (similarIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
       await handleSimilarIssuesComment(context, issue.number, similarIssues);
-      return true;
+      return { status: 200 }
     }
   }
 
-  return false;
+  return { status: 204 };
 }
 
 /**
