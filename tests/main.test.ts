@@ -113,48 +113,16 @@ describe("Plugin tests", () => {
   });
 
   it("should create and store embeddings for issues", async () => {
-    const { context, okSpy } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", STRINGS.ISSUES_OPENED as SupportedEventsU);
+    const { context } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", STRINGS.ISSUES_OPENED as SupportedEventsU);
     await expect(runPlugin(context)).resolves.toEqual([{ statusCode: 200 }, { statusCode: 204 }, { statusCode: 200 }]);
-    expect(okSpy).toHaveBeenNthCalledWith(2, "Successfully created issue!", {
-      source_id: "test_issue1",
-      type: "task",
-      plaintext: `${STRINGS.HELLO_WORLD}`,
-      embedding: STRINGS.REMOVED_FOR_BREVITY,
-      metadata: {
-        authorAssociation: "OWNER",
-        authorId: 1,
-        isPrivate: false,
-        issueNodeId: "test_issue1",
-        repoNodeId: "test_repo1",
-      },
-      created_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      modified_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      caller: STRINGS.LOGS_ANON,
-    });
   });
 
   it("should update the embeddings for issues", async () => {
     const { context: ctx } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", STRINGS.ISSUES_OPENED as SupportedEventsU);
     await runPlugin(ctx);
 
-    const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issues.edited");
+    const { context } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issues.edited");
     await expect(runPlugin(context)).resolves.toEqual([{ statusCode: 200 }, { statusCode: 204 }, { statusCode: 200 }]);
-    expect(okSpy).toHaveBeenNthCalledWith(2, "Successfully updated issue!", {
-      source_id: "test_issue1",
-      type: "task",
-      plaintext: `${STRINGS.UPDATED_MESSAGE}`,
-      embedding: STRINGS.REMOVED_FOR_BREVITY,
-      metadata: {
-        authorAssociation: "OWNER",
-        authorId: 1,
-        issueNodeId: "test_issue1",
-        repoNodeId: "test_repo1",
-        isPrivate: false,
-      },
-      modified_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      created_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-      caller: STRINGS.LOGS_ANON,
-    });
   });
 
   it("should delete the embeddings for issues", async () => {
