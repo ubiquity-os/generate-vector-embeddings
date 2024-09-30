@@ -51,7 +51,7 @@ describe("Plugin tests", () => {
 
   it("should create and store embeddings for comments", async () => {
     const { context, okSpy } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test");
-    await expect(runPlugin(context)).resolves.toEqual([{ status: 200 }]);
+    await expect(runPlugin(context)).resolves.toEqual([{ statusCode: 200 }]);
 
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully created comment!", {
@@ -77,7 +77,7 @@ describe("Plugin tests", () => {
     await runPlugin(ctx);
 
     const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issue_comment.edited");
-    await expect(runPlugin(context)).resolves.toEqual([{ status: 200 }]);
+    await expect(runPlugin(context)).resolves.toEqual([{ statusCode: 200 }]);
     const updatedComment = db.issueComments.findFirst({ where: { id: { equals: 1 } } });
     expect(updatedComment?.body).toEqual(STRINGS.UPDATED_MESSAGE);
     expect(okSpy).toHaveBeenCalledTimes(1);
@@ -104,7 +104,7 @@ describe("Plugin tests", () => {
     await runPlugin(ctx);
 
     const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issue_comment.deleted");
-    await expect(runPlugin(context)).resolves.toEqual([{ status: 200 }]);
+    await expect(runPlugin(context)).resolves.toEqual([{ statusCode: 200 }]);
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully deleted comment!", {
       commentId: "test",
@@ -114,7 +114,7 @@ describe("Plugin tests", () => {
 
   it("should create and store embeddings for issues", async () => {
     const { context, okSpy } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, 1, "test", STRINGS.ISSUES_OPENED as SupportedEventsU);
-    await expect(runPlugin(context)).resolves.toEqual([{ status: 200 }, { status: 204 }, { status: 200 }]);
+    await expect(runPlugin(context)).resolves.toEqual([{ statusCode: 200 }, { statusCode: 204 }, { statusCode: 200 }]);
     expect(okSpy).toHaveBeenNthCalledWith(2, "Successfully created issue!", {
       source_id: "test_issue1",
       type: "task",
@@ -138,7 +138,7 @@ describe("Plugin tests", () => {
     await runPlugin(ctx);
 
     const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issues.edited");
-    await expect(runPlugin(context)).resolves.toEqual([{ status: 200 }, { status: 204 }, { status: 200 }]);
+    await expect(runPlugin(context)).resolves.toEqual([{ statusCode: 200 }, { statusCode: 204 }, { statusCode: 200 }]);
     expect(okSpy).toHaveBeenNthCalledWith(2, "Successfully updated issue!", {
       source_id: "test_issue1",
       type: "task",
@@ -162,7 +162,7 @@ describe("Plugin tests", () => {
     await runPlugin(ctx);
 
     const { context, okSpy } = createContext(STRINGS.UPDATED_MESSAGE, 1, 1, 1, 1, "test", "issues.deleted");
-    await expect(runPlugin(context)).resolves.toEqual([{ status: 200 }]);
+    await expect(runPlugin(context)).resolves.toEqual([{ statusCode: 200 }]);
     expect(okSpy).toHaveBeenCalledTimes(1);
     expect(okSpy).toHaveBeenNthCalledWith(1, "Successfully deleted issue!", {
       issueNodeId: "test_issue1",

@@ -10,5 +10,5 @@ export async function createCommentEmbedding(context: Context<"issue_comment.cre
   const uploaded = await supabase.embeddings.createConversationEmbeddings(context.payload.comment.node_id, context.payload, "comment");
   logger.ok(`Successfully created comment!`, { ...uploaded, embedding: "removed for brevity" });
 
-  return { status: 200 };
+  return { statusCode: 200 };
 }

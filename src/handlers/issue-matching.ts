@@ -125,7 +125,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
         });
       }
       logger.debug("No similar issues found");
-      return { status: 200 };
+      return { statusCode: 200 };
     }
     const comment = commentBuilder(matchResultArray);
     if (existingComment) {
@@ -148,5 +148,5 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
   logger.ok(`Successfully created issue comment!`);
   logger.debug(`Exiting issueMatching handler`);
 
-  return { status: 200 };
+  return { statusCode: 200 };
 }

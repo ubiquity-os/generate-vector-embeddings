@@ -8,7 +8,7 @@ import { updateCommentEmbedding } from "./handlers/update-comment-embedding";
 import { updateTaskEmbedding } from "./handlers/update-task-embedding";
 import { Context, SupportedEvents, SupportedEventsU } from "./types";
 
-export type CallbackResult = { status: 200 | 201 | 204 | 404 | 500; message?: string; content?: string | Record<string, unknown> };
+export type CallbackResult = { statusCode: 200 | 201 | 204 | 404 | 500; message?: string; content?: string | Record<string, unknown> };
 
 /**
  * The `Context` type is a generic type defined as `Context<TEvent, TPayload>`,
@@ -93,14 +93,14 @@ export function proxyCallbacks(context: Context): ProxyCallbacks {
     get(target, prop: SupportedEventsU) {
       if (!target[prop]) {
         context.logger.info(`No callbacks found for event ${prop}`);
-        return { status: 204, reason: "skipped" };
+        return { statusCode: 204, reason: "skipped" };
       }
       return (async () => {
         try {
           return await Promise.all(target[prop].map((callback) => handleCallback(callback, context)));
         } catch (er) {
           context.logger.error(`Failed to handle event ${prop}`, { er });
-          return { status: 500, reason: "failed" };
+          return { statusCode: 500, reason: "failed" };
         }
       })();
     },

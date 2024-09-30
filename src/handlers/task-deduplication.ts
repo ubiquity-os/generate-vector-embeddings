@@ -53,11 +53,11 @@ export async function taskSimilaritySearch(context: Context<"issues.opened">): P
     if (similarIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
       await handleSimilarIssuesComment(context, issue.number, similarIssues);
-      return { status: 200 }
+      return { statusCode: 200 }
     }
   }
 
-  return { status: 204 };
+  return { statusCode: 204 };
 }
 
 /**
