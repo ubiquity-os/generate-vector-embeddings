@@ -15,7 +15,7 @@ export interface IssueGraphqlResponse {
  * @param context
  * @returns true if the issue is similar to an existing issue, false otherwise
  */
-export async function taskSimilaritySearch(context: Context<"issues.opened">): Promise<CallbackResult> {
+export async function taskSimilaritySearch(context: Context<"issues.opened" | "issues.edited">): Promise<CallbackResult> {
   const {
     logger,
     adapters: { supabase },
@@ -26,9 +26,9 @@ export async function taskSimilaritySearch(context: Context<"issues.opened">): P
   } = context;
   const similarIssues: IssueSimilaritySearchResult[] = [];
 
-  similarIssues.push(...(await supabase.embeddings.findSimilarIssues(issue.title, context.config.warningThreshold, issue.node_id)));
+  similarIssues.push(...(await supabase.embeddings.findSimilarContent(issue.title, context.config.warningThreshold, issue.node_id)));
   if (issue.body) {
-    similarIssues.push(...(await supabase.embeddings.findSimilarIssues(issue.body, context.config.warningThreshold, issue.node_id)));
+    similarIssues.push(...(await supabase.embeddings.findSimilarContent(issue.body, context.config.warningThreshold, issue.node_id)));
   }
 
   logger.info(`Found ${similarIssues.length} similar issues`);
@@ -53,7 +53,7 @@ export async function taskSimilaritySearch(context: Context<"issues.opened">): P
     if (similarIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
       await handleSimilarIssuesComment(context, issue.number, similarIssues);
-      return { statusCode: 200 }
+      return { statusCode: 200 };
     }
   }
 

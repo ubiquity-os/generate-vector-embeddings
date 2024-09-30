@@ -112,6 +112,12 @@ export class Embeddings extends Super {
       throw new Error(this.context.logger.error("Markdown not found", { sourceId })?.logMessage.raw);
     }
 
+    const embeddingData = await this.getEmbedding(sourceId);
+
+    if (!embeddingData) {
+      return await this.createEmbedding(sourceId, type, body, metadata);
+    }
+
     const embedding = await this._embedWithVoyage(body);
 
     const toStore: Omit<CommentType, "created_at"> = {
@@ -122,12 +128,6 @@ export class Embeddings extends Super {
       metadata,
       modified_at: new Date().toISOString(),
     };
-
-    const embeddingData = await this.getEmbedding(sourceId);
-
-    if (!embeddingData) {
-      return await this.createEmbedding(sourceId, type, body, metadata);
-    }
 
     const { error } = await this.supabase.from("content").update(toStore).eq("source_id", sourceId);
 
@@ -157,10 +157,10 @@ export class Embeddings extends Super {
 
   // Working with embeddings
 
-  async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[]> {
+  async findSimilarContent(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[]> {
     const embedding = await this._embedWithVoyage(markdown);
-    const { data, error } = await this.supabase.rpc("find_similar_issues", {
-      current_id: currentId,
+    const { data, error } = await this.supabase.rpc("find_similar_content", {
+      curr_source_id: currentId,
       query_embedding: embedding,
       threshold: threshold,
     });

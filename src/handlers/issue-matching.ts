@@ -24,7 +24,7 @@ export interface IssueGraphqlResponse {
   similarity: number;
 }
 
-const commentBuilder = (matchResultArray: Map<string, Array<string>>): string => {
+function commentBuilder(matchResultArray: Map<string, Array<string>>) {
   const commentLines: string[] = [">[!NOTE]", ">The following contributors may be suitable for this task:"];
   matchResultArray.forEach((issues, assignee) => {
     commentLines.push(`>### [${assignee}](https://www.github.com/${assignee})`);
@@ -50,7 +50,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
   // create a new comment with users who completed task most similar to the issue
   // if the comment already exists, it should update the comment with the new users
   const matchResultArray: Map<string, Array<string>> = new Map();
-  const similarIssues = await supabase.embeddings.findSimilarIssues(issueContent, context.config.jobMatchingThreshold, issue.node_id);
+  const similarIssues = await supabase.embeddings.findSimilarContent(issueContent, context.config.jobMatchingThreshold, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
     // Find the most similar issue and the users who completed the task
     similarIssues.sort((a, b) => b.similarity - a.similarity);

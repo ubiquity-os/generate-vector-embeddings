@@ -48,7 +48,6 @@ const callbacks = {
   "issues.deleted": [deleteTaskEmbedding],
 } as ProxyCallbacks;
 
-
 /**
  * 
 

@@ -13,6 +13,7 @@ This is a plugin for [Ubiquibot](https://github.com/ubiquity/ubiquibot-kernel). 
 ## Usage
 
 - Add the following to your `.ubiquibot-config.yml` file with the appropriate URL:
+
 ```yaml
 - plugin: https://ubiquity-os-comment-vector-embeddings-main.ubiquity.workers.dev
   with:

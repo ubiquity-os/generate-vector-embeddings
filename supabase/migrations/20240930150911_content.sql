@@ -1,3 +1,4 @@
+create extension if not exists vector;
 DROP TABLE IF EXISTS content;
 
 CREATE TABLE IF NOT EXISTS content (
@@ -13,16 +14,16 @@ CREATE TABLE IF NOT EXISTS content (
 
 ALTER TABLE "content" ENABLE ROW LEVEL SECURITY;
 
-CREATE OR REPLACE FUNCTION find_similar_content(current_source_id VARCHAR, query_embedding vector(1024), threshold float8)
+CREATE OR REPLACE FUNCTION find_similar_content(curr_source_id VARCHAR, query_embedding vector(1024), threshold float8)
 RETURNS TABLE(source_id VARCHAR, content_plaintext TEXT, similarity float8) AS $$
 BEGIN
   RETURN QUERY
-  SELECT source_id,
-         plaintext AS content_plaintext,
-         1 - (embedding <=> query_embedding) AS similarity
+  SELECT content.source_id AS source_id,
+         content.plaintext AS content_plaintext,
+         1 - (content.embedding <=> query_embedding) AS similarity
   FROM content
-  WHERE source_id <> current_source_id
-    AND 1 - (embedding <=> query_embedding) >= threshold
+  WHERE content.source_id <> curr_source_id
+    AND 1 - (content.embedding <=> query_embedding) >= threshold
   ORDER BY similarity DESC;
 END;
 $$ LANGUAGE plpgsql;
