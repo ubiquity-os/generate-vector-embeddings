@@ -12,7 +12,7 @@ To set up the `.dev.vars` file, you will need to provide the following variables
 ## Usage
 - Add the following to your `.ubiquibot-config.yml` file with the appropriate URL:
 ```yaml
-- plugin: ubiquity-os-marketplace/generate-vector-embeddings
+- plugin: https://ubiquity-os-comment-vector-embeddings-main.ubiquity.workers.dev
   with:
     matchThreshold: 0.95
     warningThreshold: 0.75
