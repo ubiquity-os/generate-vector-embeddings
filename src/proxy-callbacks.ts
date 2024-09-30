@@ -7,7 +7,7 @@ import { updateCommentEmbedding } from "./handlers/update-comment-embedding";
 import { updateTaskEmbedding } from "./handlers/update-task-embedding";
 import { Context, SupportedEvents, SupportedEventsU } from "./types";
 
-export type CallbackResult = { status: 200 | 201 | 204 | 404 | 500; reason: string; content?: string | Record<string, unknown> };
+export type CallbackResult = { status: 200 | 201 | 204 | 404 | 500; message?: string; content?: string | Record<string, unknown> };
 
 /**
  * The `Context` type is a generic type defined as `Context<TEvent, TPayload>`,

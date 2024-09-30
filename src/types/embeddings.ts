@@ -2,7 +2,7 @@ export type EmbeddingClass = "setup_instructions" | "dao_info" | "task" | "comme
 export type CommentType = {
   source_id: string;
   type: string;
-  plaintext: string | null;
+  plaintext: string | null | undefined;
   embedding: number[];
   metadata: Partial<CommentMetadata>;
   created_at: string;

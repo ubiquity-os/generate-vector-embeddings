@@ -10,5 +10,5 @@ export async function deleteTaskEmbedding(context: Context<"issues.deleted">): P
   await supabase.embeddings.deleteEmbedding(context.payload.issue.node_id);
   logger.ok(`Successfully deleted issue!`, { issueNodeId: context.payload.issue.node_id });
 
-  return { status: 200, reason: "success" };
+  return { status: 200 };
 }
