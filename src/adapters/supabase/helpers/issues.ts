@@ -144,14 +144,22 @@ export class Issues extends SuperSupabase {
       query_embedding: embedding,
       threshold: threshold,
     });
+
     if (error) {
       this.context.logger.error("Error finding similar issues", error);
       return [];
     }
-    //Calculate the edit distance between the query and the similar issues
+
     const similarIssues: string[] = data.map((issue: IssueSimilaritySearchResult) => issue.issue_plaintext);
+
+    // Calculate the maximum edit distance based on the length of the input markdown
+    const maxLength = markdown.length;
+    const editDistanceThreshold = maxLength * (1 - threshold); // Convert similarity threshold to edit distance threshold
+
+    // Calculate edit distances
     const editDistances = similarIssues.map((issue) => this.calculateEditDistance(markdown, issue));
-    //Filter out the issues that are below the threshold
-    return data.filter((index: number) => editDistances[index] <= threshold);
+
+    // Filter out the issues that are above the edit distance threshold
+    return data.filter((index: number) => editDistances[index] <= editDistanceThreshold);
   }
 }
