@@ -110,4 +110,48 @@ export class Issues extends SuperSupabase {
       this.context.logger.error("Error updating issue payload", error);
     }
   }
+
+  // Edit distance (Number of operations required to convert one string to another)
+  calculateEditDistance(query: string, similarIssues: string): number {
+    const dp: number[][] = Array(query.length + 1)
+      .fill(null)
+      .map(() => Array(similarIssues.length + 1).fill(null));
+
+    for (let i = 0; i <= query.length; i++) {
+      dp[i][0] = i;
+    }
+    for (let j = 0; j <= similarIssues.length; j++) {
+      dp[0][j] = j;
+    }
+    for (let i = 1; i <= query.length; i++) {
+      for (let j = 1; j <= similarIssues.length; j++) {
+        const cost = query[i - 1] === similarIssues[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1, // deletion
+          dp[i][j - 1] + 1, // insertion
+          dp[i - 1][j - 1] + cost // substitution
+        );
+      }
+    }
+
+    return dp[query.length][similarIssues.length];
+  }
+
+  async fetchSimilarIssueEditDist(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[] | null> {
+    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+    const { data, error } = await this.supabase.rpc("find_similar_issues", {
+      current_id: currentId,
+      query_embedding: embedding,
+      threshold: threshold,
+    });
+    if (error) {
+      this.context.logger.error("Error finding similar issues", error);
+      return [];
+    }
+    //Calculate the edit distance between the query and the similar issues
+    const similarIssues: string[] = data.map((issue: IssueSimilaritySearchResult) => issue.issue_plaintext);
+    const editDistances = similarIssues.map((issue) => this.calculateEditDistance(markdown, issue));
+    //Filter out the issues that are below the threshold
+    return data.filter((index: number) => editDistances[index] <= threshold);
+  }
 }
