@@ -7,12 +7,11 @@ export async function updateComment(context: Context) {
     adapters: { supabase },
   } = context;
   const { payload } = context as { payload: CommentPayload };
-  const markdown = payload.comment.body;
   const authorId = payload.comment.user?.id || -1;
   const nodeId = payload.comment.node_id;
-  const isPrivate = payload.repository.private;
-  const issueId = payload.issue.node_id;
-
+  const issueId = payload.issue.node_id
+  const isPrivate = !context.config.redactPrivateRepoComments && payload.repository.private;
+  const markdown = payload.comment.body || null;
   // Fetch the previous comment and update it in the db
   try {
     if (!markdown) {

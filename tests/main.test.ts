@@ -269,6 +269,7 @@ describe("Plugin tests", () => {
         warningThreshold: 0.75,
         matchThreshold: 0.95,
         jobMatchingThreshold: 0.95,
+        redactPrivateRepoComments: false,
       },
       adapters: {} as Context["adapters"],
       logger: new Logs("debug"),
