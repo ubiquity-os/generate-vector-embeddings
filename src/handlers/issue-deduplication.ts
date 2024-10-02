@@ -6,6 +6,12 @@ export interface IssueGraphqlResponse {
   node: {
     title: string;
     url: string;
+    repository: {
+      name: string;
+      owner: {
+        login: string;
+      };
+    };
   };
   similarity: string;
 }
@@ -24,7 +30,6 @@ export async function issueChecker(context: Context): Promise<boolean> {
   const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
   const issueContent = issue.body + issue.title;
-
   // Fetch all similar issues based on settings.warningThreshold
   const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
@@ -54,6 +59,18 @@ export async function issueChecker(context: Context): Promise<boolean> {
 }
 
 /**
+ * Compare the repository and issue name to the similar issue repository and issue name
+ * @param repoOrg
+ * @param similarIssueRepoOrg
+ * @param repoName
+ * @param similarIssueRepoName
+ * @returns
+ */
+function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg: string, repoName: string, similarIssueRepoName: string): boolean {
+  return repoOrg === similarIssueRepoOrg && repoName === similarIssueRepoName;
+}
+
+/**
  * Handle commenting on an issue with similar issues information
  * @param context
  * @param payload
@@ -69,29 +86,39 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
             ... on Issue {
               title
               url
+              repository {
+                name
+                owner {
+                  login
+                }
+              }
             }
           }
         }`,
         { issueNodeId: issue.issue_id }
       );
-      issueUrl.similarity = (issue.similarity * 100).toFixed(2);
+      issueUrl.similarity = Math.round(issue.similarity * 100).toString();
       return issueUrl;
     })
   );
 
-  const commentBody = issueList.map((issue) => `- [${issue.node.title}](${issue.node.url}) Similarity: ${issue.similarity}`).join("\n");
-  const body = `This issue seems to be similar to the following issue(s):\n\n${commentBody}`;
+  const commentBody = issueList
+    .filter((issue) =>
+      matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
+    )
+    .map((issue) => {
+      const modifiedUrl = issue.node.url.replace("github.com", "www.github.com");
+      return `* \`${issue.similarity}%\` [${issue.node.title}](${modifiedUrl})`;
+    })
+    .join("\n");
+  const body = `>[!NOTE]\n>#### Similar Issues:\n>\n>${commentBody}`;
 
   const existingComments = await context.octokit.issues.listComments({
     owner: payload.repository.owner.login,
     repo: payload.repository.name,
     issue_number: issueNumber,
   });
-
-  const existingComment = existingComments.data.find(
-    (comment) => comment.body && comment.body.includes("This issue seems to be similar to the following issue(s)")
-  );
-
+  const existingComment = existingComments.data.find((comment) => comment.body && comment.body.includes(">[!NOTE]\n>#### Similar Issues:\n>"));
   if (existingComment) {
     await context.octokit.issues.updateComment({
       owner: payload.repository.owner.login,

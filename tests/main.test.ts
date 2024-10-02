@@ -164,9 +164,9 @@ function createContextInner(
       organization: { login: STRINGS.USER_1 } as Context["payload"]["organization"],
     } as Context["payload"],
     config: {
-      warningThreshold: 0.75,
-      matchThreshold: 0.95,
-      jobMatchingThreshold: 0.95,
+      warningThreshold: 0.1,
+      matchThreshold: 0.4,
+      jobMatchingThreshold: 0.4,
     },
     adapters: {} as Context["adapters"],
     logger: new Logs("debug"),
