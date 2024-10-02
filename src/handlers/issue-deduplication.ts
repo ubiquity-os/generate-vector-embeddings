@@ -102,36 +102,30 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
     })
   );
 
+  let finalIdx = 0;
   const commentBody = issueList
     .filter((issue) =>
       matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
     )
-    .map((issue) => {
-      const modifiedUrl = issue.node.url.replace("github.com", "www.github.com");
-      return `* \`${issue.similarity}%\` [${issue.node.title}](${modifiedUrl})`;
+    .map((issue, index) => {
+      const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
+      finalIdx += 1;
+      return `[^0${index + 1}^]: [${issue.node.title}](${modifiedUrl}) ${issue.similarity}%`;
     })
     .join("\n");
-  const body = `>[!NOTE]\n>#### Similar Issues:\n>\n>${commentBody}`;
+  const footnoteLinks = [...Array(finalIdx).keys()].map((i) => `[^0${i + 1}^]`).join("");
+  const body = "\n###### Similar " + footnoteLinks + ":\n\n" + commentBody;
 
-  const existingComments = await context.octokit.issues.listComments({
+  // Remove the existing foot note
+  const existingBody = context.payload.issue.body;
+  const footnoteIndex = existingBody?.indexOf("\n###### Similar");
+  const newBody = footnoteIndex !== -1 ? existingBody?.substring(0, footnoteIndex) : existingBody;
+
+  //Append the new foot note
+  await context.octokit.issues.update({
     owner: payload.repository.owner.login,
     repo: payload.repository.name,
     issue_number: issueNumber,
+    body: newBody + body,
   });
-  const existingComment = existingComments.data.find((comment) => comment.body && comment.body.includes(">[!NOTE]\n>#### Similar Issues:\n>"));
-  if (existingComment) {
-    await context.octokit.issues.updateComment({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      comment_id: existingComment.id,
-      body: body,
-    });
-  } else {
-    await context.octokit.issues.createComment({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      issue_number: issueNumber,
-      body: body,
-    });
-  }
 }
