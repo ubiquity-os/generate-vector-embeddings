@@ -71,7 +71,7 @@ function findMostSimilarSentence(issueContent: string, similarIssueContent: stri
   const issueSentences = issueContent.split(/[.!?]+/).filter((sentence) => sentence.trim().length > 0);
   const similarIssueSentences = similarIssueContent.split(/[.!?]+/).filter((sentence) => sentence.trim().length > 0);
   let maxSimilarity = 0;
-  let mostSimilarSentence = "";
+  let mostSimilarSentence;
   let mostSimilarIndex = -1;
   issueSentences.forEach((sentence, index) => {
     const similarities = similarIssueSentences.map((similarSentence) => {
@@ -87,7 +87,9 @@ function findMostSimilarSentence(issueContent: string, similarIssueContent: stri
       mostSimilarIndex = index;
     }
   });
-
+  if (!mostSimilarSentence) {
+    throw new Error("No similar sentence found");
+  }
   return { sentence: mostSimilarSentence, similarity: maxSimilarity, index: mostSimilarIndex };
 }
 
@@ -132,7 +134,7 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
   const existingFootnotes = issueBody.match(footnoteRegex) || [];
   const highestFootnoteIndex = existingFootnotes.length > 0 ? Math.max(...existingFootnotes.map((fn) => parseInt(fn.match(/\d+/)?.[0] ?? "0"))) : 0;
   let updatedBody = issueBody;
-  let footnotes = "";
+  let footnotes: string[] | undefined;
   relevantIssues.forEach((issue, index) => {
     const footnoteIndex = highestFootnoteIndex + index + 1; // Continue numbering from the highest existing footnote number
     const footnoteRef = `[^0${footnoteIndex}^]`;
@@ -143,12 +145,17 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
     const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
     updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
 
-    // Add new footnote
-    footnotes += `${footnoteRef}: ⚠ ${issue.similarity}% possible duplicate - [${issue.node.title}](${modifiedUrl})\n\n`;
+    // Initialize footnotes array if not already done
+    if (!footnotes) {
+      footnotes = [];
+    }
+
+    // Add new footnote to the array
+    footnotes.push(`${footnoteRef}: ⚠ ${issue.similarity}% possible duplicate - [${issue.node.title}](${modifiedUrl})\n\n`);
   });
 
   // Append new footnotes to the body, keeping the previous ones
-  updatedBody += footnotes;
+  updatedBody += footnotes ? footnotes.join("") : "";
 
   // Update the issue with the modified body
   await context.octokit.issues.update({
