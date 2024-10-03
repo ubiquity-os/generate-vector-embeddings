@@ -29,7 +29,13 @@ export async function issueChecker(context: Context): Promise<boolean> {
   } = context;
   const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
-  const issueContent = issue.body + issue.title;
+
+  //Find and remove the footnotes from the issue content
+  const existingBody = context.payload.issue.body;
+  const footnoteIndex = existingBody?.indexOf("\n###### Similar");
+  const issueBody = footnoteIndex !== -1 ? existingBody?.substring(0, footnoteIndex) : existingBody;
+  const issueContent = issueBody + issue.title;
+
   // Fetch all similar issues based on settings.warningThreshold
   const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
@@ -50,7 +56,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
     // Handle issues that match the settings.warningThreshold but not the MATCH_THRESHOLD
     if (similarIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
-      await handleSimilarIssuesComment(context, payload, issue.number, similarIssues);
+      await handleSimilarIssuesComment(context, payload, issue.number, similarIssues, issueBody || "");
       return true;
     }
   }
@@ -77,7 +83,13 @@ function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg:
  * @param issueNumber
  * @param similarIssues
  */
-async function handleSimilarIssuesComment(context: Context, payload: IssuePayload, issueNumber: number, similarIssues: IssueSimilaritySearchResult[]) {
+async function handleSimilarIssuesComment(
+  context: Context,
+  payload: IssuePayload,
+  issueNumber: number,
+  similarIssues: IssueSimilaritySearchResult[],
+  modifiedBody: string
+) {
   const issueList: IssueGraphqlResponse[] = await Promise.all(
     similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
       const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
@@ -119,16 +131,11 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
   const footnoteLinks = [...Array(++finalIndex).keys()].map((i) => `[^0${i + 1}^]`).join("");
   const body = "\n###### Similar " + footnoteLinks + "\n\n" + commentBody;
 
-  // Remove the existing foot note
-  const existingBody = context.payload.issue.body;
-  const footnoteIndex = existingBody?.indexOf("\n###### Similar");
-  const newBody = footnoteIndex !== -1 ? existingBody?.substring(0, footnoteIndex) : existingBody;
-
   //Append the new foot note
   await context.octokit.issues.update({
     owner: payload.repository.owner.login,
     repo: payload.repository.name,
     issue_number: issueNumber,
-    body: newBody + body,
+    body: modifiedBody + body,
   });
 }
