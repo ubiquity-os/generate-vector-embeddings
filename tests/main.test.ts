@@ -165,7 +165,8 @@ function createContextInner(
     } as Context["payload"],
     config: {
       warningThreshold: 0.75,
-      matchThreshold: 0.95,
+      matchThreshold: 0.9,
+      jobMatchingThreshold: 0.75,
     },
     adapters: {} as Context["adapters"],
     logger: new Logs("debug"),

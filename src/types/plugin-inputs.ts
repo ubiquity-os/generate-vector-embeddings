@@ -20,10 +20,11 @@ export interface PluginInputs<T extends SupportedEventsU = SupportedEventsU, TU 
  */
 export const pluginSettingsSchema = T.Object(
   {
-    matchThreshold: T.Number(),
-    warningThreshold: T.Number(),
+    matchThreshold: T.Number({ default: 0.95 }),
+    warningThreshold: T.Number({ default: 0.75 }),
+    jobMatchingThreshold: T.Number({ default: 0.75 }),
   },
-  { default: { matchThreshold: 0.95, warningThreshold: 0.75 } }
+  { default: {} }
 );
 
 export const pluginSettingsValidator = new StandardValidator(pluginSettingsSchema);

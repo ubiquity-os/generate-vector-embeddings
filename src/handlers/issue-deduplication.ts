@@ -6,6 +6,12 @@ export interface IssueGraphqlResponse {
   node: {
     title: string;
     url: string;
+    repository: {
+      name: string;
+      owner: {
+        login: string;
+      };
+    };
   };
   similarity: string;
 }
@@ -24,10 +30,8 @@ export async function issueChecker(context: Context): Promise<boolean> {
   const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
   const issueContent = issue.body + issue.title;
-
   // Fetch all similar issues based on settings.warningThreshold
   const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.warningThreshold, issue.node_id);
-  console.log(similarIssues);
   if (similarIssues && similarIssues.length > 0) {
     const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
 
@@ -55,6 +59,18 @@ export async function issueChecker(context: Context): Promise<boolean> {
 }
 
 /**
+ * Compare the repository and issue name to the similar issue repository and issue name
+ * @param repoOrg
+ * @param similarIssueRepoOrg
+ * @param repoName
+ * @param similarIssueRepoName
+ * @returns
+ */
+function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg: string, repoName: string, similarIssueRepoName: string): boolean {
+  return repoOrg === similarIssueRepoOrg && repoName === similarIssueRepoName;
+}
+
+/**
  * Handle commenting on an issue with similar issues information
  * @param context
  * @param payload
@@ -70,42 +86,45 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
             ... on Issue {
               title
               url
+              repository {
+                name
+                owner {
+                  login
+                }
+              }
             }
           }
         }`,
         { issueNodeId: issue.issue_id }
       );
-      issueUrl.similarity = (issue.similarity * 100).toFixed(2);
+      issueUrl.similarity = Math.round(issue.similarity * 100).toString();
       return issueUrl;
     })
   );
 
-  const commentBody = issueList.map((issue) => `- [${issue.node.title}](${issue.node.url}) Similarity: ${issue.similarity}`).join("\n");
-  const body = `This issue seems to be similar to the following issue(s):\n\n${commentBody}`;
+  let finalIndex = 0;
+  const commentBody = issueList
+    .filter((issue) =>
+      matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
+    )
+    .map((issue, index) => {
+      const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
+      return `[^0${index + 1}^]: [${issue.node.title}](${modifiedUrl}) ${issue.similarity}%`;
+    })
+    .join("\n");
+  const footnoteLinks = [...Array(++finalIndex).keys()].map((i) => `[^0${i + 1}^]`).join("");
+  const body = "\n###### Similar " + footnoteLinks + "\n\n" + commentBody;
 
-  const existingComments = await context.octokit.issues.listComments({
+  // Remove the existing foot note
+  const existingBody = context.payload.issue.body;
+  const footnoteIndex = existingBody?.indexOf("\n###### Similar");
+  const newBody = footnoteIndex !== -1 ? existingBody?.substring(0, footnoteIndex) : existingBody;
+
+  //Append the new foot note
+  await context.octokit.issues.update({
     owner: payload.repository.owner.login,
     repo: payload.repository.name,
     issue_number: issueNumber,
+    body: newBody + body,
   });
-
-  const existingComment = existingComments.data.find(
-    (comment) => comment.body && comment.body.includes("This issue seems to be similar to the following issue(s)")
-  );
-
-  if (existingComment) {
-    await context.octokit.issues.updateComment({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      comment_id: existingComment.id,
-      body: body,
-    });
-  } else {
-    await context.octokit.issues.createComment({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      issue_number: issueNumber,
-      body: body,
-    });
-  }
 }

@@ -9,6 +9,17 @@ export interface IssueSimilaritySearchResult {
   similarity: number;
 }
 
+export interface IssueType {
+  id: string;
+  markdown?: string;
+  plaintext?: string;
+  payload?: Record<string, unknown>;
+  author_id: number;
+  created_at: string;
+  modified_at: string;
+  embedding: number[];
+}
+
 export class Issues extends SuperSupabase {
   constructor(supabase: SupabaseClient, context: Context) {
     super(supabase, context);
@@ -66,6 +77,19 @@ export class Issues extends SuperSupabase {
     }
   }
 
+  async getIssue(issueNodeId: string): Promise<IssueType[] | null> {
+    const { data, error } = await this.supabase
+      .from("issues") // Provide the second type argument
+      .select("*")
+      .eq("id", issueNodeId)
+      .returns<IssueType[]>();
+    if (error) {
+      this.context.logger.error("Error getting issue", error);
+      return null;
+    }
+    return data;
+  }
+
   async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[] | null> {
     const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
     const { data, error } = await this.supabase.rpc("find_similar_issues", {
@@ -78,5 +102,12 @@ export class Issues extends SuperSupabase {
       return [];
     }
     return data;
+  }
+
+  async updatePayload(issueNodeId: string, payload: Record<string, unknown>) {
+    const { error } = await this.supabase.from("issues").update({ payload }).eq("id", issueNodeId);
+    if (error) {
+      this.context.logger.error("Error updating issue payload", error);
+    }
   }
 }
