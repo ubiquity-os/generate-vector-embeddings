@@ -102,18 +102,17 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
     })
   );
 
-  let finalIdx = 0;
+  let finalIndex = 0;
   const commentBody = issueList
     .filter((issue) =>
       matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
     )
     .map((issue, index) => {
       const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
-      finalIdx += 1;
       return `[^0${index + 1}^]: [${issue.node.title}](${modifiedUrl}) ${issue.similarity}%`;
     })
     .join("\n");
-  const footnoteLinks = [...Array(finalIdx).keys()].map((i) => `[^0${i + 1}^]`).join("");
+  const footnoteLinks = [...Array(++finalIndex).keys()].map((i) => `[^0${i + 1}^]`).join("");
   const body = "\n###### Similar " + footnoteLinks + "\n\n" + commentBody;
 
   // Remove the existing foot note
