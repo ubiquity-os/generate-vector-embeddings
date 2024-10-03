@@ -114,7 +114,7 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
     })
     .join("\n");
   const footnoteLinks = [...Array(finalIdx).keys()].map((i) => `[^0${i + 1}^]`).join("");
-  const body = "\n###### Similar " + footnoteLinks + ":\n\n" + commentBody;
+  const body = "\n###### Similar " + footnoteLinks + "\n\n" + commentBody;
 
   // Remove the existing foot note
   const existingBody = context.payload.issue.body;
