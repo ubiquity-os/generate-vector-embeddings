@@ -112,6 +112,10 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
       return `[^0${index + 1}^]: [${issue.node.title}](${modifiedUrl}) ${issue.similarity}%`;
     })
     .join("\n");
+
+  if (commentBody.length === 0) {
+    return;
+  }
   const footnoteLinks = [...Array(++finalIndex).keys()].map((i) => `[^0${i + 1}^]`).join("");
   const body = "\n###### Similar " + footnoteLinks + "\n\n" + commentBody;
 
