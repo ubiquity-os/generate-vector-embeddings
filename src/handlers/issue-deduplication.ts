@@ -32,10 +32,15 @@ export async function issueChecker(context: Context): Promise<boolean> {
   } = context;
   const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
-  const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issue.body || ""), context.config.warningThreshold, issue.node_id);
+  let issueBody = issue.body;
+  if (!issueBody) {
+    logger.info("Issue body is empty");
+    return false;
+  }
+  issueBody = removeFootnotes(issueBody);
+  const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issueBody), context.config.warningThreshold, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
     const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
-
     if (matchIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`);
       await octokit.issues.update({
@@ -49,11 +54,11 @@ export async function issueChecker(context: Context): Promise<boolean> {
 
     if (similarIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
-      await handleSimilarIssuesComment(context, payload, issue.number, similarIssues);
+      await handleSimilarIssuesComment(context, payload, issueBody, issue.number, similarIssues);
       return true;
     }
   }
-
+  console.log("No similar issues found");
   return false;
 }
 
@@ -93,7 +98,13 @@ function findMostSimilarSentence(issueContent: string, similarIssueContent: stri
   return { sentence: mostSimilarSentence, similarity: maxSimilarity, index: mostSimilarIndex };
 }
 
-async function handleSimilarIssuesComment(context: Context, payload: IssuePayload, issueNumber: number, similarIssues: IssueSimilaritySearchResult[]) {
+async function handleSimilarIssuesComment(
+  context: Context,
+  payload: IssuePayload,
+  issueBody: string,
+  issueNumber: number,
+  similarIssues: IssueSimilaritySearchResult[]
+) {
   const issueList: IssueGraphqlResponse[] = await Promise.all(
     similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
       const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
@@ -115,7 +126,7 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
         { issueNodeId: issue.issue_id }
       );
       issueUrl.similarity = Math.round(issue.similarity * 100).toString();
-      issueUrl.mostSimilarSentence = findMostSimilarSentence(context.payload.issue.body || "", issueUrl.node.body);
+      issueUrl.mostSimilarSentence = findMostSimilarSentence(issueBody, issueUrl.node.body);
       return issueUrl;
     })
   );
@@ -128,7 +139,9 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
     return;
   }
 
-  const issueBody = context.payload.issue.body || "";
+  if (!issueBody) {
+    return;
+  }
   // Find existing footnotes in the body
   const footnoteRegex = /\[\^(\d+)\^\]/g;
   const existingFootnotes = issueBody.match(footnoteRegex) || [];
@@ -155,7 +168,9 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
   });
 
   // Append new footnotes to the body, keeping the previous ones
-  updatedBody += footnotes ? footnotes.join("") : "";
+  if (footnotes) {
+    updatedBody += "\n\n" + footnotes.join("");
+  }
 
   // Update the issue with the modified body
   await context.octokit.issues.update({
@@ -168,30 +183,34 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
 
 /**
  * Finds the edit distance between two strings using dynamic programming.
- * @param sentenceA
- * @param sentenceB
- * @returns
+ * The edit distance is a way of quantifying how dissimilar two strings are to one another by
+ * counting the minimum number of operations required to transform one string into the other.
+ * For more information, see: https://en.wikipedia.org/wiki/Edit_distance
+ * @param sentenceA The first string
+ * @param sentenceB The second string
+ * @returns The edit distance between the two strings
  */
 function findEditDistance(sentenceA: string, sentenceB: string): number {
-  const m = sentenceA.length;
-  const n = sentenceB.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array.from({ length: n + 1 }, () => 0));
+  const lengthA = sentenceA.length;
+  const lengthB = sentenceB.length;
+  const distanceMatrix: number[][] = Array.from({ length: lengthA + 1 }, () => Array.from({ length: lengthB + 1 }, () => 0));
 
-  for (let i = 0; i <= m; i++) {
-    for (let j = 0; j <= n; j++) {
-      if (i === 0) {
-        dp[i][j] = j;
-      } else if (j === 0) {
-        dp[i][j] = i;
-      } else if (sentenceA[i - 1] === sentenceB[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1];
+  for (let indexA = 0; indexA <= lengthA; indexA++) {
+    for (let indexB = 0; indexB <= lengthB; indexB++) {
+      if (indexA === 0) {
+        distanceMatrix[indexA][indexB] = indexB;
+      } else if (indexB === 0) {
+        distanceMatrix[indexA][indexB] = indexA;
+      } else if (sentenceA[indexA - 1] === sentenceB[indexB - 1]) {
+        distanceMatrix[indexA][indexB] = distanceMatrix[indexA - 1][indexB - 1];
       } else {
-        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+        distanceMatrix[indexA][indexB] =
+          1 + Math.min(distanceMatrix[indexA - 1][indexB], distanceMatrix[indexA][indexB - 1], distanceMatrix[indexA - 1][indexB - 1]);
       }
     }
   }
 
-  return dp[m][n];
+  return distanceMatrix[lengthA][lengthB];
 }
 
 /**
@@ -200,12 +219,16 @@ function findEditDistance(sentenceA: string, sentenceB: string): number {
  * @param content The content of the issue
  * @returns The content without footnotes
  */
-function removeFootnotes(content: string): string {
-  // Remove footnote references like [^1^], [^2^], etc.
-  const footnoteRefRegex = /\[\^\d+\^\]/g;
-  const contentWithoutFootnoteRefs = content.replace(footnoteRefRegex, "");
-
-  // Remove footnote section starting with '###### Similar Issues' or any other footnote-related section
-  const footnoteSectionRegex = /\n###### Similar Issues[\s\S]*$/g;
-  return contentWithoutFootnoteRefs.replace(footnoteSectionRegex, "");
+export function removeFootnotes(content: string): string {
+  const footnoteDefRegex = /\[\^(\d+)\^\]: ⚠ \d+% possible duplicate - [^\n]+(\n|$)/g;
+  const footnotes = content.match(footnoteDefRegex);
+  let contentWithoutFootnotes = content.replace(footnoteDefRegex, "");
+  if (footnotes) {
+    console.log(footnotes);
+    footnotes.forEach((footnote) => {
+      const footnoteNumber = footnote.match(/\d+/)?.[0];
+      contentWithoutFootnotes = contentWithoutFootnotes.replace(new RegExp(`\\[\\^${footnoteNumber}\\^\\]`, "g"), "");
+    });
+  }
+  return contentWithoutFootnotes.replace(/\n{2,}/g, "\n").trim();
 }

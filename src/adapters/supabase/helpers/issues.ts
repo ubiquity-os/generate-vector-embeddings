@@ -37,7 +37,7 @@ export class Issues extends SuperSupabase {
       return;
     } else {
       const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
-      let plaintext: string | null = markdownToPlainText(markdown || "");
+      let plaintext: string | null = markdownToPlainText(markdown);
       if (isPrivate) {
         payload = null;
         markdown = null;
@@ -55,7 +55,7 @@ export class Issues extends SuperSupabase {
   async updateIssue(markdown: string | null, issueNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean) {
     //Create the embedding for this comment
     const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(markdown));
-    let plaintext: string | null = markdownToPlainText(markdown || "");
+    let plaintext: string | null = markdownToPlainText(markdown);
     if (isPrivate) {
       markdown = null as string | null;
       payload = null as Record<string, unknown> | null;
