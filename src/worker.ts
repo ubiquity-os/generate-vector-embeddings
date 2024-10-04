@@ -7,16 +7,10 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     try {
       const url = new URL(request.url);
-      if (url.pathname === "/manifest") {
-        if (request.method === "GET") {
-          return new Response(JSON.stringify(manifest), {
-            headers: { "content-type": "application/json" },
-          });
-        } else if (request.method === "POST") {
-          const webhookPayload = await request.json();
-          validateAndDecodeSchemas(env, webhookPayload.settings);
-          return new Response(JSON.stringify({ message: "Schema is valid" }), { status: 200, headers: { "content-type": "application/json" } });
-        }
+      if (url.pathname === "/manifest.json" && request.method === "GET") {
+        return new Response(JSON.stringify(manifest), {
+          headers: { "content-type": "application/json" },
+        });
       }
       if (request.method !== "POST") {
         return new Response(JSON.stringify({ error: `Only POST requests are supported.` }), {
