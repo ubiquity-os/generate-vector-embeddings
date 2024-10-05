@@ -5,6 +5,7 @@ import { IssuePayload } from "../types/payload";
 export interface IssueGraphqlResponse {
   node: {
     title: string;
+    number: number;
     url: string;
     body: string;
     repository: {
@@ -113,6 +114,7 @@ async function handleSimilarIssuesComment(
             ... on Issue {
               title
               url
+              number
               body
               repository {
                 name
@@ -164,7 +166,7 @@ async function handleSimilarIssuesComment(
     }
 
     // Add new footnote to the array
-    footnotes.push(`${footnoteRef}: ⚠ ${issue.similarity}% possible duplicate - [${issue.node.title}](${modifiedUrl})\n\n`);
+    footnotes.push(`${footnoteRef}: ⚠ ${issue.similarity}% possible duplicate - [${issue.node.title}](${modifiedUrl}#${issue.node.number})\n\n`);
   });
 
   // Append new footnotes to the body, keeping the previous ones
