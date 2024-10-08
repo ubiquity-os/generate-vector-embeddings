@@ -96,6 +96,7 @@ export class Issues extends SuperSupabase {
       current_id: currentId,
       query_embedding: embedding,
       threshold: threshold,
+      top_k: 5,
     });
     if (error) {
       this.context.logger.error("Error finding similar issues", error);

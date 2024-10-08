@@ -59,7 +59,17 @@ export async function issueChecker(context: Context): Promise<boolean> {
       return true;
     }
   }
-  console.log("No similar issues found");
+  context.logger.info("No similar issues found");
+
+  //Use the IssueBody (Without footnotes) to update the issue
+  if (issueBody !== issue.body) {
+    await octokit.issues.update({
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      issue_number: issue.number,
+      body: issueBody,
+    });
+  }
   return false;
 }
 
@@ -74,11 +84,26 @@ function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg:
  * @returns The most similar sentence and its similarity score
  */
 function findMostSimilarSentence(issueContent: string, similarIssueContent: string): { sentence: string; similarity: number; index: number } {
-  const issueSentences = issueContent.split(/[.!?]+/).filter((sentence) => sentence.trim().length > 0);
-  const similarIssueSentences = similarIssueContent.split(/[.!?]+/).filter((sentence) => sentence.trim().length > 0);
+  // Regex to match sentences while preserving URLs
+  const sentenceRegex = /([^.!?\s][^.!?]*(?:[.!?](?!['"]?\s|$)[^.!?]*)*[.!?]?['"]?(?=\s|$))/g;
+
+  // Function to split text into sentences while preserving URLs
+  const splitIntoSentences = (text: string): string[] => {
+    const sentences: string[] = [];
+    let match;
+    while ((match = sentenceRegex.exec(text)) !== null) {
+      sentences.push(match[0].trim());
+    }
+    return sentences;
+  };
+
+  const issueSentences = splitIntoSentences(issueContent);
+  const similarIssueSentences = splitIntoSentences(similarIssueContent);
+
   let maxSimilarity = 0;
-  let mostSimilarSentence;
+  let mostSimilarSentence = "";
   let mostSimilarIndex = -1;
+
   issueSentences.forEach((sentence, index) => {
     const similarities = similarIssueSentences.map((similarSentence) => {
       const editDistance = findEditDistance(sentence, similarSentence);
@@ -93,6 +118,7 @@ function findMostSimilarSentence(issueContent: string, similarIssueContent: stri
       mostSimilarIndex = index;
     }
   });
+
   if (!mostSimilarSentence) {
     throw new Error("No similar sentence found");
   }
@@ -138,7 +164,7 @@ async function handleSimilarIssuesComment(
   );
 
   if (relevantIssues.length === 0) {
-    return;
+    context.logger.info("No relevant issues found with the same repository and organization");
   }
 
   if (!issueBody) {
@@ -226,7 +252,6 @@ export function removeFootnotes(content: string): string {
   const footnotes = content.match(footnoteDefRegex);
   let contentWithoutFootnotes = content.replace(footnoteDefRegex, "");
   if (footnotes) {
-    console.log(footnotes);
     footnotes.forEach((footnote) => {
       const footnoteNumber = footnote.match(/\d+/)?.[0];
       contentWithoutFootnotes = contentWithoutFootnotes.replace(new RegExp(`\\[\\^${footnoteNumber}\\^\\]`, "g"), "");
