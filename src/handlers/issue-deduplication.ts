@@ -21,7 +21,7 @@ export interface IssueGraphqlResponse {
 
 /**
  * Checks if the current issue is a duplicate of an existing issue.
- * If a similar issue is found, a comment is added to the current issue.
+ * If a similar issue is found, a footnote is added to the current issue.
  * @param context The context object
  * @returns True if a similar issue is found, false otherwise
  **/
