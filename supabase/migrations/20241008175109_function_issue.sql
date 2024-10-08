@@ -26,12 +26,12 @@ BEGIN
     RETURN QUERY
     SELECT id AS issue_id,
            plaintext AS issue_plaintext,
-           1 - (l2_distance(current_quantized, embedding)) AS similarity
+           ((0.5 * inner_product(current_quantized, embedding)) + 0.5 * (1 / (1 + l2_distance(current_quantized, embedding)))) as similarity
     FROM issues
     WHERE id <> current_id
         AND current_repo = payload->'repository'->>'name'::text
         AND current_org =  payload->'repository'->'owner'->>'login'::text
-        AND 1 - l2_distance(current_quantized, embedding) > threshold  -- Ensure similarity exceeds threshold
+        AND  ((0.5 * inner_product(current_quantized, embedding)) + 0.5 * (1 / (1 + l2_distance(current_quantized, embedding)))) > threshold
     ORDER BY similarity DESC
     LIMIT top_k;
 END;
