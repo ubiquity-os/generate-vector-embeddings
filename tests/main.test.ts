@@ -1,19 +1,19 @@
 // cSpell:disable
 
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
 import { drop } from "@mswjs/data";
-import { db } from "./__mocks__/db";
-import { server } from "./__mocks__/node";
-import { expect, describe, beforeAll, beforeEach, afterAll, afterEach, it } from "@jest/globals";
-import { Context, SupportedEvents } from "../src/types/context";
 import { Octokit } from "@octokit/rest";
-import { STRINGS } from "./__mocks__/strings";
-import { createComment, setupTests } from "./__mocks__/helpers";
-import manifest from "../manifest.json";
+import { Logs } from "@ubiquity-os/ubiquity-os-logger";
 import dotenv from "dotenv";
-import { Logs } from "@ubiquity-dao/ubiquibot-logger";
-import { Env } from "../src/types";
+import manifest from "../manifest.json";
 import { runPlugin } from "../src/plugin";
+import { Env } from "../src/types";
+import { Context, SupportedEvents } from "../src/types/context";
 import { CommentMock, createMockAdapters } from "./__mocks__/adapter";
+import { db } from "./__mocks__/db";
+import { createComment, setupTests } from "./__mocks__/helpers";
+import { server } from "./__mocks__/node";
+import { STRINGS } from "./__mocks__/strings";
 
 dotenv.config();
 jest.requireActual("@octokit/rest");

@@ -1,5 +1,5 @@
 {
-  "name": "@ubiquibot/issue-comment-embeddings",
+  "name": "@ubiquity-os/issue-comment-embeddings",
   "version": "1.0.0",
   "description": "Generates vector embeddings of GitHub comments and stores them in Supabase.",
   "author": "Ubiquity DAO",
@@ -36,7 +36,7 @@
     "@sinclair/typebox": "0.32.33",
     "@supabase/supabase-js": "^2.45.2",
     "@types/markdown-it": "^14.1.2",
-    "@ubiquity-dao/ubiquibot-logger": "^1.3.0",
+    "@ubiquity-os/ubiquity-os-logger": "^1.3.2",
     "dotenv": "16.4.5",
     "markdown-it": "^14.1.0",
     "markdown-it-plain-text": "^0.3.0",
