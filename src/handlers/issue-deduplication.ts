@@ -176,6 +176,9 @@ async function handleSimilarIssuesComment(
   const highestFootnoteIndex = existingFootnotes.length > 0 ? Math.max(...existingFootnotes.map((fn) => parseInt(fn.match(/\d+/)?.[0] ?? "0"))) : 0;
   let updatedBody = issueBody;
   let footnotes: string[] | undefined;
+  // Sort relevant issues by similarity in ascending order
+  relevantIssues.sort((a, b) => parseFloat(a.similarity) - parseFloat(b.similarity));
+
   relevantIssues.forEach((issue, index) => {
     const footnoteIndex = highestFootnoteIndex + index + 1; // Continue numbering from the highest existing footnote number
     const footnoteRef = `[^0${footnoteIndex}^]`;
