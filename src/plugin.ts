@@ -14,6 +14,7 @@ import { updateIssue } from "./handlers/update-issue";
 import { Context, Env, PluginInputs } from "./types";
 import { Database } from "./types/database";
 import { isIssueCommentEvent, isIssueEvent } from "./types/typeguards";
+import { issueTransfer } from "./handlers/transfer-issue";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -41,6 +42,8 @@ export async function runPlugin(context: Context) {
         return await issueMatching(context);
       case "issues.deleted":
         return await deleteIssues(context);
+      case "issues.transferred":
+        return await issueTransfer(context);
     }
   } else if (eventName == "issues.labeled") {
     return await issueMatching(context);

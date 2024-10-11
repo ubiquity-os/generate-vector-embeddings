@@ -17,7 +17,8 @@ export type SupportedEventsU =
   | "issues.opened"
   | "issues.edited"
   | "issues.deleted"
-  | "issues.labeled";
+  | "issues.labeled"
+  | "issues.transferred";
 
 export type SupportedEvents = {
   [K in SupportedEventsU]: K extends WebhookEventName ? WebhookEvent<K> : never;
