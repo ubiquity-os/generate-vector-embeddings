@@ -20,6 +20,11 @@ export function isIssueCommentEvent(context: Context): context is Context<"issue
  *
  * @param context The context object.
  */
-export function isIssueEvent(context: Context): context is Context<"issues.opened" | "issues.edited" | "issues.deleted"> {
-  return context.eventName === "issues.opened" || context.eventName === "issues.edited" || context.eventName === "issues.deleted";
+export function isIssueEvent(context: Context): context is Context<"issues.opened" | "issues.edited" | "issues.deleted" | "issues.transferred"> {
+  return (
+    context.eventName === "issues.opened" ||
+    context.eventName === "issues.edited" ||
+    context.eventName === "issues.deleted" ||
+    context.eventName === "issues.transferred"
+  );
 }

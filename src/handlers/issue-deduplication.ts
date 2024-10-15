@@ -51,6 +51,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
         state: "closed",
         state_reason: "not_planned",
       });
+      return true;
     }
 
     if (similarIssues.length > 0) {
@@ -58,11 +59,8 @@ export async function issueChecker(context: Context): Promise<boolean> {
       await handleSimilarIssuesComment(context, payload, issueBody, issue.number, similarIssues);
       return true;
     }
-  }
-  context.logger.info("No similar issues found");
-
-  //Use the IssueBody (Without footnotes) to update the issue
-  if (issueBody !== issue.body) {
+  } else {
+    //Use the IssueBody (Without footnotes) to update the issue when no similar issues are found
     await octokit.issues.update({
       owner: payload.repository.owner.login,
       repo: payload.repository.name,
@@ -70,6 +68,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
       body: issueBody,
     });
   }
+  context.logger.info("No similar issues found");
   return false;
 }
 
