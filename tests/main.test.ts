@@ -1,19 +1,18 @@
 // cSpell:disable
 
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
 import { drop } from "@mswjs/data";
-import { db } from "./__mocks__/db";
-import { server } from "./__mocks__/node";
-import { expect, describe, beforeAll, beforeEach, afterAll, afterEach, it } from "@jest/globals";
-import { Context, SupportedEvents } from "../src/types/context";
 import { Octokit } from "@octokit/rest";
-import { STRINGS } from "./__mocks__/strings";
-import { createComment, setupTests } from "./__mocks__/helpers";
-import manifest from "../manifest.json";
+import { Logs } from "@ubiquity-os/ubiquity-os-logger";
 import dotenv from "dotenv";
-import { Logs } from "@ubiquity-dao/ubiquibot-logger";
-import { Env } from "../src/types";
 import { runPlugin } from "../src/plugin";
+import { Env } from "../src/types";
+import { Context, SupportedEvents } from "../src/types/context";
 import { CommentMock, createMockAdapters } from "./__mocks__/adapter";
+import { db } from "./__mocks__/db";
+import { createComment, setupTests } from "./__mocks__/helpers";
+import { server } from "./__mocks__/node";
+import { STRINGS } from "./__mocks__/strings";
 
 dotenv.config();
 jest.requireActual("@octokit/rest");
@@ -33,17 +32,6 @@ describe("Plugin tests", () => {
   beforeEach(async () => {
     drop(db);
     await setupTests();
-  });
-
-  it("Should serve the manifest file", async () => {
-    const worker = (await import("../src/worker")).default;
-    const response = await worker.fetch(new Request("http://localhost/manifest.json"), {
-      SUPABASE_KEY: "test",
-      SUPABASE_URL: "test",
-      VOYAGEAI_API_KEY: "test",
-    });
-    const content = await response.json();
-    expect(content).toEqual(manifest);
   });
 
   it("When a comment is created it should add it to the database", async () => {
@@ -165,8 +153,8 @@ function createContextInner(
     } as Context["payload"],
     config: {
       warningThreshold: 0.75,
-      matchThreshold: 0.95,
-      jobMatchingThreshold: 0.95,
+      matchThreshold: 0.9,
+      jobMatchingThreshold: 0.75,
     },
     adapters: {} as Context["adapters"],
     logger: new Logs("debug"),

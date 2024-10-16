@@ -28,7 +28,7 @@ export async function run() {
 
   await plugin(inputs, env);
 
-  return returnDataToKernel(inputs.authToken, inputs.stateId, {});
+  return returnDataToKernel(process.env.GITHUB_TOKEN, inputs.stateId, {});
 }
 
 async function returnDataToKernel(repoToken: string, stateId: string, output: object) {
@@ -36,7 +36,7 @@ async function returnDataToKernel(repoToken: string, stateId: string, output: ob
   await octokit.repos.createDispatchEvent({
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
-    event_type: "return_data_to_ubiquibot_kernel",
+    event_type: "return-data-to-ubiquity-os-kernel",
     client_payload: {
       state_id: stateId,
       output: JSON.stringify(output),
