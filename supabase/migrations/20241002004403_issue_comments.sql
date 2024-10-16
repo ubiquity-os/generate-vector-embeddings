@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS find_similar_issues;
+
 CREATE OR REPLACE FUNCTION find_similar_issues(current_id VARCHAR, query_embedding vector(1024), threshold float8, top_k INT)
 RETURNS TABLE(issue_id VARCHAR, issue_plaintext TEXT, similarity float8) AS $$
 DECLARE
