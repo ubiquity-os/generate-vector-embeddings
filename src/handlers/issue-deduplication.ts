@@ -40,6 +40,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
   }
   issueBody = removeFootnotes(issueBody);
   const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issueBody), context.config.warningThreshold, issue.node_id);
+
   if (similarIssues && similarIssues.length > 0) {
     const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
     if (matchIssues.length > 0) {
@@ -53,7 +54,6 @@ export async function issueChecker(context: Context): Promise<boolean> {
       });
       return true;
     }
-
     if (similarIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
       await handleSimilarIssuesComment(context, payload, issueBody, issue.number, similarIssues);
@@ -259,5 +259,5 @@ export function removeFootnotes(content: string): string {
       contentWithoutFootnotes = contentWithoutFootnotes.replace(new RegExp(`\\[\\^${footnoteNumber}\\^\\]`, "g"), "");
     });
   }
-  return contentWithoutFootnotes.replace(/\n{2,}/g, "\n").trim();
+  return contentWithoutFootnotes;
 }
