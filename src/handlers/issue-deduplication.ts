@@ -259,5 +259,5 @@ export function removeFootnotes(content: string): string {
       contentWithoutFootnotes = contentWithoutFootnotes.replace(new RegExp(`\\[\\^${footnoteNumber}\\^\\]`, "g"), "");
     });
   }
-  return contentWithoutFootnotes.replace(/\n{2,}/g, "\n");
+  return contentWithoutFootnotes;
 }
