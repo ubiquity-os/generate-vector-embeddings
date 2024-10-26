@@ -65,12 +65,15 @@ export async function issueChecker(context: Context): Promise<boolean> {
     }
   } else {
     //Use the IssueBody (Without footnotes) to update the issue when no similar issues are found
-    await octokit.issues.update({
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      issue_number: issue.number,
-      body: issueBody,
-    });
+    //Only if the issue has "possible duplicate" footnotes, update the issue
+    if (checkIfDuplicateFootNoteExists(issue.body || "")) {
+      await octokit.issues.update({
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        issue_number: issue.number,
+        body: issueBody,
+      });
+    }
   }
   context.logger.info("No similar issues found");
   return false;
@@ -290,4 +293,10 @@ export function removeFootnotes(content: string): string {
     });
   }
   return contentWithoutFootnotes;
+}
+
+function checkIfDuplicateFootNoteExists(content: string): boolean {
+  const footnoteDefRegex = /\[\^(\d+)\^\]: ⚠ \d+% possible duplicate - [^\n]+(\n|$)/g;
+  const footnotes = content.match(footnoteDefRegex);
+  return !!footnotes;
 }
