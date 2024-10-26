@@ -94,7 +94,7 @@ export class Issues extends SuperSupabase {
   }
 
   async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[] | null> {
-    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown, "query");
     const { data, error } = await this.supabase.rpc("find_similar_issues", {
       current_id: currentId,
       query_embedding: embedding,

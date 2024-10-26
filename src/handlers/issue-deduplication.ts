@@ -39,16 +39,20 @@ export async function issueChecker(context: Context): Promise<boolean> {
     return false;
   }
   issueBody = removeFootnotes(issueBody);
-  const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issueBody), context.config.warningThreshold, issue.node_id);
-
+  const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issueBody), 0.7, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
     const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
+    const processedIssues = await processSimilarIssues(similarIssues, context, issueBody);
     if (matchIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`);
+      //To the issue body, add a footnote with the link to the similar issue
+      const updatedBody = await handleMatchIssuesComment(context, payload, issueBody, processedIssues);
+      issueBody = updatedBody || issueBody;
       await octokit.issues.update({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         issue_number: issue.number,
+        body: issueBody,
         state: "closed",
         state_reason: "not_planned",
       });
@@ -56,7 +60,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
     }
     if (similarIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
-      await handleSimilarIssuesComment(context, payload, issueBody, issue.number, similarIssues);
+      await handleSimilarIssuesComment(context, payload, issueBody, issue.number, processedIssues);
       return true;
     }
   } else {
@@ -85,7 +89,6 @@ function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg:
 function findMostSimilarSentence(issueContent: string, similarIssueContent: string): { sentence: string; similarity: number; index: number } {
   // Regex to match sentences while preserving URLs
   const sentenceRegex = /([^.!?\s][^.!?]*(?:[.!?](?!['"]?\s|$)[^.!?]*)*[.!?]?['"]?(?=\s|$))/g;
-
   // Function to split text into sentences while preserving URLs
   const splitIntoSentences = (text: string): string[] => {
     const sentences: string[] = [];
@@ -124,14 +127,93 @@ function findMostSimilarSentence(issueContent: string, similarIssueContent: stri
   return { sentence: mostSimilarSentence, similarity: maxSimilarity, index: mostSimilarIndex };
 }
 
-async function handleSimilarIssuesComment(
+async function handleSimilarIssuesComment(context: Context, payload: IssuePayload, issueBody: string, issueNumber: number, issueList: IssueGraphqlResponse[]) {
+  const relevantIssues = issueList.filter((issue) =>
+    matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
+  );
+
+  if (relevantIssues.length === 0) {
+    context.logger.info("No relevant issues found with the same repository and organization");
+  }
+
+  if (!issueBody) {
+    return;
+  }
+  // Find existing footnotes in the body
+  const footnoteRegex = /\[\^(\d+)\^\]/g;
+  const existingFootnotes = issueBody.match(footnoteRegex) || [];
+  const highestFootnoteIndex = existingFootnotes.length > 0 ? Math.max(...existingFootnotes.map((fn) => parseInt(fn.match(/\d+/)?.[0] ?? "0"))) : 0;
+  let updatedBody = issueBody;
+  let footnotes: string[] | undefined;
+  // Sort relevant issues by similarity in ascending order
+  relevantIssues.sort((a, b) => parseFloat(a.similarity) - parseFloat(b.similarity));
+  relevantIssues.forEach((issue, index) => {
+    const footnoteIndex = highestFootnoteIndex + index + 1; // Continue numbering from the highest existing footnote number
+    const footnoteRef = `[^0${footnoteIndex}^]`;
+    const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
+    const { sentence } = issue.mostSimilarSentence;
+    // Insert footnote reference in the body
+    const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
+    updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
+    // Initialize footnotes array if not already done
+    if (!footnotes) {
+      footnotes = [];
+    }
+    // Add new footnote to the array
+    footnotes.push(`${footnoteRef}: ⚠ ${issue.similarity}% possible duplicate - [${issue.node.title}](${modifiedUrl}#${issue.node.number})\n\n`);
+  });
+  // Append new footnotes to the body, keeping the previous ones
+  if (footnotes) {
+    updatedBody += "\n\n" + footnotes.join("");
+  }
+  // Update the issue with the modified body
+  await context.octokit.issues.update({
+    owner: payload.repository.owner.login,
+    repo: payload.repository.name,
+    issue_number: issueNumber,
+    body: updatedBody,
+  });
+}
+
+//When similarity is greater than match threshold, Add Caution mentioning the issues to which its is very much similar
+async function handleMatchIssuesComment(
   context: Context,
   payload: IssuePayload,
   issueBody: string,
-  issueNumber: number,
-  similarIssues: IssueSimilaritySearchResult[]
-) {
-  const issueList: IssueGraphqlResponse[] = await Promise.all(
+  issueList: IssueGraphqlResponse[]
+): Promise<string | undefined> {
+  const relevantIssues = issueList.filter((issue) =>
+    matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
+  );
+
+  if (relevantIssues.length === 0) {
+    context.logger.info("No relevant issues found with the same repository and organization");
+  }
+
+  if (!issueBody) {
+    return;
+  }
+  // Find existing footnotes in the body
+  const footnoteRegex = /\[\^(\d+)\^\]/g;
+  const existingFootnotes = issueBody.match(footnoteRegex) || [];
+  // Find the index with respect to the issue body string where the footnotes start if they exist
+  const footnoteIndex = existingFootnotes[0] ? issueBody.indexOf(existingFootnotes[0]) : issueBody.length;
+  let resultBuilder = "\n\n>[!CAUTION]\n> This issue is very similar to the following issues:\n";
+  // Sort relevant issues by similarity in descending order
+  relevantIssues.sort((a, b) => parseFloat(b.similarity) - parseFloat(a.similarity));
+  // Append the similar issues to the resultBuilder
+  relevantIssues.forEach((issue) => {
+    const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
+    resultBuilder += `> - [${issue.node.title}](${modifiedUrl}#${issue.node.number})\n`;
+  });
+  // Insert the resultBuilder into the issue body
+  // Update the issue with the modified body
+  return issueBody.slice(0, footnoteIndex) + resultBuilder + issueBody.slice(footnoteIndex);
+}
+
+// Process similar issues and return the list of similar issues with their similarity scores
+async function processSimilarIssues(similarIssues: IssueSimilaritySearchResult[], context: Context, issueBody: string): Promise<IssueGraphqlResponse[]> {
+  return await Promise.all(
     similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
       const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
         `query($issueNodeId: ID!) {
@@ -157,58 +239,6 @@ async function handleSimilarIssuesComment(
       return issueUrl;
     })
   );
-
-  const relevantIssues = issueList.filter((issue) =>
-    matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
-  );
-
-  if (relevantIssues.length === 0) {
-    context.logger.info("No relevant issues found with the same repository and organization");
-  }
-
-  if (!issueBody) {
-    return;
-  }
-  // Find existing footnotes in the body
-  const footnoteRegex = /\[\^(\d+)\^\]/g;
-  const existingFootnotes = issueBody.match(footnoteRegex) || [];
-  const highestFootnoteIndex = existingFootnotes.length > 0 ? Math.max(...existingFootnotes.map((fn) => parseInt(fn.match(/\d+/)?.[0] ?? "0"))) : 0;
-  let updatedBody = issueBody;
-  let footnotes: string[] | undefined;
-  // Sort relevant issues by similarity in ascending order
-  relevantIssues.sort((a, b) => parseFloat(a.similarity) - parseFloat(b.similarity));
-
-  relevantIssues.forEach((issue, index) => {
-    const footnoteIndex = highestFootnoteIndex + index + 1; // Continue numbering from the highest existing footnote number
-    const footnoteRef = `[^0${footnoteIndex}^]`;
-    const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
-    const { sentence } = issue.mostSimilarSentence;
-
-    // Insert footnote reference in the body
-    const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
-    updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
-
-    // Initialize footnotes array if not already done
-    if (!footnotes) {
-      footnotes = [];
-    }
-
-    // Add new footnote to the array
-    footnotes.push(`${footnoteRef}: ⚠ ${issue.similarity}% possible duplicate - [${issue.node.title}](${modifiedUrl}#${issue.node.number})\n\n`);
-  });
-
-  // Append new footnotes to the body, keeping the previous ones
-  if (footnotes) {
-    updatedBody += "\n\n" + footnotes.join("");
-  }
-
-  // Update the issue with the modified body
-  await context.octokit.issues.update({
-    owner: payload.repository.owner.login,
-    repo: payload.repository.name,
-    issue_number: issueNumber,
-    body: updatedBody,
-  });
 }
 
 /**
