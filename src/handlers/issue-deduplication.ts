@@ -201,7 +201,7 @@ async function handleMatchIssuesComment(
   const existingFootnotes = issueBody.match(footnoteRegex) || [];
   // Find the index with respect to the issue body string where the footnotes start if they exist
   const footnoteIndex = existingFootnotes[0] ? issueBody.indexOf(existingFootnotes[0]) : issueBody.length;
-  let resultBuilder = "\n\n>[!CAUTION]\n> This issue is very similar to the following issues:\n";
+  let resultBuilder = "\n\n>[!CAUTION]\n> This issue may be a duplicate of the following issues:\n";
   // Sort relevant issues by similarity in descending order
   relevantIssues.sort((a, b) => parseFloat(b.similarity) - parseFloat(a.similarity));
   // Append the similar issues to the resultBuilder
