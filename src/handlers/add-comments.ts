@@ -12,9 +12,13 @@ export async function addComments(context: Context<"issue_comment.created">) {
   const nodeId = payload.comment.node_id;
   const isPrivate = payload.repository.private;
   const issueId = payload.issue.node_id;
+
   try {
     if (!markdown) {
       throw new Error("Comment body is empty");
+    }
+    if (context.payload.issue.pull_request) {
+      throw new Error("Comment is on a pull request");
     }
     if ((await supabase.issue.getIssue(issueId)) === null) {
       await addIssue(context as unknown as Context<"issues.opened">);
