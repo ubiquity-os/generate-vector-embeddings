@@ -40,7 +40,10 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
   issueBody = removeFootnotes(issueBody);
   const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issueBody), 0.7, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
-    const processedIssues = await processSimilarIssues(similarIssues, context, issueBody);
+    let processedIssues = await processSimilarIssues(similarIssues, context, issueBody);
+    processedIssues = processedIssues.filter((issue) =>
+      matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
+    );
     const matchIssues = processedIssues.filter((issue) => parseFloat(issue.similarity) >= context.config.matchThreshold);
     if (matchIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`);
@@ -188,17 +191,8 @@ async function handleMatchIssuesComment(
   context: Context,
   payload: Context<"issues.opened" | "issues.edited">["payload"],
   issueBody: string,
-  issueList: IssueGraphqlResponse[]
+  relevantIssues: IssueGraphqlResponse[]
 ): Promise<string | undefined> {
-  const relevantIssues = issueList.filter((issue) =>
-    matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
-  );
-
-  if (relevantIssues.length === 0) {
-    context.logger.info("No relevant issues found with the same repository and organization");
-    return;
-  }
-
   if (!issueBody) {
     return;
   }
@@ -298,7 +292,13 @@ export function removeFootnotes(content: string): string {
       contentWithoutFootnotes = contentWithoutFootnotes.replace(new RegExp(`\\[\\^${footnoteNumber}\\^\\]`, "g"), "");
     });
   }
+  contentWithoutFootnotes = removeCautionMessages(contentWithoutFootnotes);
   return contentWithoutFootnotes;
+}
+
+export function removeCautionMessages(content: string): string {
+  const cautionRegex = />[!CAUTION]\n> This issue may be a duplicate of the following issues:\n((> - \[[^\]]+\]\([^)]+\)\n)+)/g;
+  return content.replace(cautionRegex, "");
 }
 
 function checkIfDuplicateFootNoteExists(content: string): boolean {
