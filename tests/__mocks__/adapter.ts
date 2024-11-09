@@ -13,6 +13,13 @@ export interface CommentMock {
   embedding: number[];
 }
 
+export interface IssueMock {
+  id: string;
+  plaintext: string;
+  author_id: number;
+  payload: Record<string, unknown>;
+}
+
 export function createMockAdapters(context: Context) {
   const commentMap: Map<string, CommentMock> = new Map();
   return {
@@ -73,6 +80,18 @@ export function createMockAdapters(context: Context) {
           return commentMap.get(commentNodeId);
         }),
       } as unknown as Comment,
+      issue: {
+        getIssue: jest.fn(async (issueNodeId: string) => {
+          return [
+            {
+              id: issueNodeId,
+              plaintext: STRINGS.HELLO_WORLD,
+              author_id: 1,
+              payload: {},
+            } as IssueMock,
+          ];
+        }),
+      },
     },
     voyage: {
       embedding: {
