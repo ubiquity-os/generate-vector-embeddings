@@ -11,12 +11,13 @@ export class SuperSupabase {
   }
 
   async checkConnection(): Promise<boolean> {
-    const { error } = await this.supabase.rpc("pg_catalog.current_database");
+    const { error } = await this.supabase.from("issues").select("*").limit(1);
     // If there's no error, the connection is working
     if (!error) {
       return true;
     } else {
-      throw new Error("Error connecting to Supabase");
+      console.log(error);
+      throw new Error("Error connecting to Supabase or Schema has not been migrated/created");
     }
   }
 }
