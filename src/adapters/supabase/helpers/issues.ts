@@ -36,7 +36,7 @@ export class Issues extends SuperSupabase {
       this.context.logger.info("Issue already exists");
       return;
     } else {
-      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown, "document");
       let plaintext: string | null = markdownToPlainText(markdown);
       if (isPrivate) {
         payload = null;
@@ -113,5 +113,14 @@ export class Issues extends SuperSupabase {
     if (error) {
       this.context.logger.error("Error updating issue payload", { err: error });
     }
+  }
+
+  async isIssuePresent(issueNodeId: string): Promise<boolean> {
+    const { data, error } = await this.supabase.from("issues").select("*").eq("id", issueNodeId);
+    if (error) {
+      this.context.logger.error("Error checking if issue is present", error);
+      return false;
+    }
+    return data && data.length > 0;
   }
 }

@@ -1,4 +1,5 @@
 import { Context } from "../types";
+import { addIssue } from "./add-issue";
 
 export async function addComments(context: Context<"issue_comment.created">) {
   const {
@@ -11,12 +12,16 @@ export async function addComments(context: Context<"issue_comment.created">) {
   const nodeId = payload.comment.node_id;
   const isPrivate = payload.repository.private;
   const issueId = payload.issue.node_id;
-
   try {
     if (!markdown) {
       throw new Error("Comment body is empty");
     }
+    if (!(await supabase.issue.isIssuePresent(issueId))) {
+      await addIssue(context);
+    }
     await supabase.comment.createComment(markdown, nodeId, authorId, payload, isPrivate, issueId);
+    logger.ok(`Created Comment with id: ${nodeId}`);
+    logger.ok(`Successfully created comment!`);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error creating comment:`, { error: error, stack: error.stack });
@@ -26,7 +31,5 @@ export async function addComments(context: Context<"issue_comment.created">) {
       throw error;
     }
   }
-
-  logger.ok(`Successfully created comment!`);
   logger.debug(`Exiting addComments`);
 }

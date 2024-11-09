@@ -26,6 +26,9 @@ export async function runPlugin(context: Context) {
       apiKey: env.VOYAGEAI_API_KEY,
     });
     context.adapters = createAdapters(supabase, voyageClient, context);
+    //Check the supabase adapter
+    const isConnectionValid = await context.adapters.supabase.super.checkConnection();
+    context.logger[isConnectionValid ? "ok" : "error"](`Supabase connection ${isConnectionValid ? "successful" : "failed"}`);
   }
 
   if (isIssueCommentEvent(context)) {
