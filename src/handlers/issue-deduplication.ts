@@ -60,7 +60,7 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
       });
       return true;
     }
-    if (similarIssues.length > 0) {
+    if (processedIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
       await handleSimilarIssuesComment(context, payload, issueBody, issue.number, processedIssues);
       return true;

@@ -61,12 +61,11 @@ export class Issues extends SuperSupabase {
       plaintext = null;
     }
     const issues = await this.getIssue(issueNodeId);
-    if (issues && issues.length == 0) {
+    if (!issues) {
       this.context.logger.info("Issue does not exist, creating a new one");
       await this.createIssue(issueNodeId, payload, isPrivate, markdown, authorId);
     } else {
       const { error } = await this.supabase.from("issues").update({ markdown, plaintext, embedding, payload, modified_at: new Date() }).eq("id", issueNodeId);
-
       if (error) {
         this.context.logger.error("Error updating comment", { err: error });
       }
