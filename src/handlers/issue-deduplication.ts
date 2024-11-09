@@ -40,8 +40,8 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
   issueBody = removeFootnotes(issueBody);
   const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issueBody), 0.7, issue.node_id);
   if (similarIssues && similarIssues.length > 0) {
-    const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
     const processedIssues = await processSimilarIssues(similarIssues, context, issueBody);
+    const matchIssues = processedIssues.filter((issue) => parseFloat(issue.similarity) >= context.config.matchThreshold);
     if (matchIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`);
       //To the issue body, add a footnote with the link to the similar issue
@@ -196,6 +196,7 @@ async function handleMatchIssuesComment(
 
   if (relevantIssues.length === 0) {
     context.logger.info("No relevant issues found with the same repository and organization");
+    return;
   }
 
   if (!issueBody) {
