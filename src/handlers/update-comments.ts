@@ -1,4 +1,5 @@
 import { Context } from "../types";
+import { addIssue } from "./add-issue";
 
 export async function updateComment(context: Context<"issue_comment.edited">) {
   const {
@@ -16,6 +17,12 @@ export async function updateComment(context: Context<"issue_comment.edited">) {
   try {
     if (!markdown) {
       throw new Error("Comment body is empty");
+    }
+    if (context.payload.issue.pull_request) {
+      throw new Error("Comment is on a pull request");
+    }
+    if ((await supabase.issue.getIssue(issueId)) === null) {
+      await addIssue(context as unknown as Context<"issues.opened">);
     }
     await supabase.comment.updateComment(markdown, nodeId, authorId, payload, isPrivate, issueId);
   } catch (error) {
