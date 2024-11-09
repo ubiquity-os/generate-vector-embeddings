@@ -86,8 +86,12 @@ export class Issues extends SuperSupabase {
       .select("*")
       .eq("id", issueNodeId)
       .returns<IssueType[]>();
-    if (error) {
-      this.context.logger.error("Error getting issue", { err: error });
+    if (error || !data || data.length === 0) {
+      if (error) {
+        this.context.logger.error("Error getting issue", { err: error });
+      } else {
+        this.context.logger.error("Error getting issue: No data found");
+      }
       return null;
     }
     return data;
