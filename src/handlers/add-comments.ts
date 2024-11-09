@@ -16,7 +16,7 @@ export async function addComments(context: Context<"issue_comment.created">) {
     if (!markdown) {
       throw new Error("Comment body is empty");
     }
-    if (!(await supabase.issue.isIssuePresent(issueId))) {
+    if ((await supabase.issue.getIssue(issueId)) === null) {
       await addIssue(context);
     }
     await supabase.comment.createComment(markdown, nodeId, authorId, payload, isPrivate, issueId);

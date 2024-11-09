@@ -32,7 +32,7 @@ export class Comment extends SuperSupabase {
       return;
     }
     if (data && data.length > 0) {
-      this.context.logger.info("Comment already exists");
+      throw new Error("Comment already exists");
       return;
     } else {
       //Create the embedding for this comment

@@ -11,21 +11,12 @@ export class SuperSupabase {
   }
 
   async checkConnection(): Promise<boolean> {
-    const { logger } = this.context;
-    try {
-      const { error } = await this.supabase.from("_realtime").select("*").limit(1);
-
-      // If there's no error, the connection is working
-      if (!error) {
-        return true;
-      }
-
-      // Log the error for debugging purposes
-      logger.error("Error during Supabase connection check:", error);
-      return false;
-    } catch (error) {
-      logger.error("Error during Supabase connection check:", error || new Error("Unknown error"));
-      return false;
+    const { error } = await this.supabase.from("_realtime").select("*").limit(1);
+    // If there's no error, the connection is working
+    if (!error) {
+      return true;
+    } else {
+      throw new Error("Error connecting to Supabase");
     }
   }
 }
