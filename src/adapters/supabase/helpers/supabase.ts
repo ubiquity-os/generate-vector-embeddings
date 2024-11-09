@@ -11,7 +11,7 @@ export class SuperSupabase {
   }
 
   async checkConnection(): Promise<boolean> {
-    const { error } = await this.supabase.from("_realtime").select("*").limit(1);
+    const { error } = await this.supabase.rpc("pg_catalog.current_database");
     // If there's no error, the connection is working
     if (!error) {
       return true;
