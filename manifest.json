@@ -25,12 +25,17 @@
       "jobMatchingThreshold": {
         "default": 0.75,
         "type": "number"
+      },
+      "redactPrivateRepoComments": {
+        "default": false,
+        "type": "boolean"
       }
     },
     "required": [
       "matchThreshold",
       "warningThreshold",
-      "jobMatchingThreshold"
+      "jobMatchingThreshold",
+      "redactPrivateRepoComments"
     ]
   }
 }
