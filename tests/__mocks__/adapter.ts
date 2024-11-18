@@ -74,19 +74,36 @@ export function createMockAdapters(context: Context) {
       } as unknown as Comment,
 
       issue: {
-        findSimilarIssues: jest.fn(async (issueContent: string) => {
-          if (issueContent && issueContent.length > 0) {
+        findSimilarIssues: jest.fn(async (issueContent: string, threshold: number, currentIssueId: string) => {
+          // Return empty array for first issue in each test
+          if (currentIssueId === "warning1" || currentIssueId === "match1") {
+            return [];
+          }
+
+          // For warning threshold test (similarity around 0.8)
+          if (currentIssueId === "warning2") {
             return [
               {
-                node: {
-                  title: "Test Title",
-                  url: "https://www.github.com",
-                },
-                similarity: "0.95",
+                issue_id: "warning1",
+                similarity: 0.8,
               },
             ];
           }
+
+          // For match threshold test (similarity above 0.95)
+          if (currentIssueId === "match2") {
+            return [
+              {
+                issue_id: "match1",
+                similarity: 0.96,
+              },
+            ];
+          }
+
           return [];
+        }),
+        createIssue: jest.fn(async () => {
+          // Implementation for createIssue
         }),
       },
       fetchComments: jest.fn(async (issueId: string) => {

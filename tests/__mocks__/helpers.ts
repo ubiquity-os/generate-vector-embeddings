@@ -52,6 +52,8 @@ export async function setupTests() {
       login: STRINGS.USER_1,
       id: 1,
     },
+    owner: STRINGS.USER_1,
+    repo: STRINGS.TEST_REPO,
     author_association: "OWNER",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -83,6 +85,8 @@ export async function setupTests() {
       login: STRINGS.USER_1,
       id: 1,
     },
+    owner: STRINGS.USER_1,
+    repo: STRINGS.TEST_REPO,
     author_association: "OWNER",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -141,6 +145,8 @@ export function createIssue(
         updated_at: new Date().toISOString(),
         owner: owner,
         repo: repo,
+        state: issueState,
+        state_reason: issueCloseReason,
       },
     });
   } else {
@@ -157,11 +163,27 @@ export function createIssue(
       state_reason: issueCloseReason,
       owner: owner,
       repo: repo,
+      reactions: {
+        url: "",
+        total_count: 0,
+        "+1": 0,
+        "-1": 0,
+        laugh: 0,
+        hooray: 0,
+        confused: 0,
+        heart: 0,
+        rocket: 0,
+        eyes: 0,
+      },
+      timeline_url: "",
+      comments: 0,
+      labels: [],
+      locked: false,
     });
   }
 }
 
-export function createComment(comment: string, commentId: number, nodeId: string) {
+export function createComment(comment: string, commentId: number, nodeId: string, issueNumber?: number) {
   const existingComment = db.issueComments.findFirst({
     where: {
       id: {
@@ -169,6 +191,17 @@ export function createComment(comment: string, commentId: number, nodeId: string
       },
     },
   });
+
+  // Find the issue by nodeId to get its number
+  const issue = db.issue.findFirst({
+    where: {
+      node_id: {
+        equals: nodeId,
+      },
+    },
+  });
+
+  const targetIssueNumber = issueNumber || (issue ? issue.number : 1);
 
   if (existingComment) {
     db.issueComments.update({
@@ -180,13 +213,14 @@ export function createComment(comment: string, commentId: number, nodeId: string
       data: {
         body: comment,
         updated_at: new Date().toISOString(),
+        issue_number: targetIssueNumber,
       },
     });
   } else {
     db.issueComments.create({
       id: commentId,
       body: comment,
-      issue_number: 1,
+      issue_number: targetIssueNumber,
       node_id: nodeId,
       user: {
         login: STRINGS.USER_1,
