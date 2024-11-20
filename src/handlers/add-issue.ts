@@ -14,7 +14,8 @@ export async function addIssue(context: Context<"issues.opened">) {
 
   try {
     if (!markdown) {
-      throw new Error("Issue body is empty");
+      logger.error("Issue body is empty");
+      return;
     }
     const cleanedIssue = removeFootnotes(markdown);
     await supabase.issue.createIssue(nodeId, payload, isPrivate, cleanedIssue, authorId);

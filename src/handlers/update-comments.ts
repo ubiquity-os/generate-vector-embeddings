@@ -16,10 +16,10 @@ export async function updateComment(context: Context<"issue_comment.edited">) {
   // Fetch the previous comment and update it in the db
   try {
     if (!markdown) {
-      throw new Error("Comment body is empty");
+      logger.error("Comment body is empty");
     }
     if (context.payload.issue.pull_request) {
-      throw new Error("Comment is on a pull request");
+      logger.error("Comment is on a pull request");
     }
     if ((await supabase.issue.getIssue(issueId)) === null) {
       await addIssue(context as unknown as Context<"issues.opened">);

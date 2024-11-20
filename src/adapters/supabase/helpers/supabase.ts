@@ -16,8 +16,8 @@ export class SuperSupabase {
     if (!error) {
       return true;
     } else {
-      console.log(error);
-      throw new Error("Error connecting to Supabase or Schema has not been migrated/created");
+      this.context.logger.error("Error connecting to Supabase or Schema has not been migrated/created");
+      return false;
     }
   }
 }

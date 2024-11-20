@@ -15,10 +15,10 @@ export async function addComments(context: Context<"issue_comment.created">) {
 
   try {
     if (!markdown) {
-      throw new Error("Comment body is empty");
+      logger.error("Comment body is empty");
     }
     if (context.payload.issue.pull_request) {
-      throw new Error("Comment is on a pull request");
+      logger.error("Comment is on a pull request");
     }
     if ((await supabase.issue.getIssue(issueId)) === null) {
       await addIssue(context as unknown as Context<"issues.opened">);
@@ -29,10 +29,8 @@ export async function addComments(context: Context<"issue_comment.created">) {
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Error creating comment:`, { error: error, stack: error.stack });
-      throw error;
     } else {
       logger.error(`Error creating comment:`, { err: error, error: new Error() });
-      throw error;
     }
   }
   logger.debug(`Exiting addComments`);

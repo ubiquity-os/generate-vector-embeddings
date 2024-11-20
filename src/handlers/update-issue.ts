@@ -15,7 +15,8 @@ export async function updateIssue(context: Context<"issues.edited">) {
   // Fetch the previous issue and update it in the db
   try {
     if (!markdown) {
-      throw new Error("Issue body is empty");
+      logger.error("Issue body is empty");
+      return;
     }
     //clean issue by removing footnotes
     const cleanedIssue = removeFootnotes(markdown);

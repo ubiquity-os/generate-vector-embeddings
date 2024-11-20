@@ -91,7 +91,7 @@ function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg:
  * @param similarIssueContent The content of the similar issue
  * @returns The most similar sentence and its similarity score
  */
-function findMostSimilarSentence(issueContent: string, similarIssueContent: string): { sentence: string; similarity: number; index: number } {
+function findMostSimilarSentence(issueContent: string, similarIssueContent: string, context: Context): { sentence: string; similarity: number; index: number } {
   // Regex to match sentences while preserving URLs
   const sentenceRegex = /([^.!?\s][^.!?]*(?:[.!?](?!['"]?\s|$)[^.!?]*)*[.!?]?['"]?(?=\s|$))/g;
   // Function to split text into sentences while preserving URLs
@@ -127,7 +127,7 @@ function findMostSimilarSentence(issueContent: string, similarIssueContent: stri
   });
 
   if (!mostSimilarSentence) {
-    throw new Error("No similar sentence found");
+    context.logger.error("No similar sentence found");
   }
   return { sentence: mostSimilarSentence, similarity: maxSimilarity, index: mostSimilarIndex };
 }
@@ -238,7 +238,7 @@ async function processSimilarIssues(similarIssues: IssueSimilaritySearchResult[]
         { issueNodeId: issue.issue_id }
       );
       issueUrl.similarity = Math.round(issue.similarity * 100).toString();
-      issueUrl.mostSimilarSentence = findMostSimilarSentence(issueBody, issueUrl.node.body);
+      issueUrl.mostSimilarSentence = findMostSimilarSentence(issueBody, issueUrl.node.body, context);
       return issueUrl;
     })
   );
