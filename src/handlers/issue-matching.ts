@@ -1,5 +1,4 @@
 import { Context } from "../types";
-import { IssuePayload } from "../types/payload";
 
 export interface IssueGraphqlResponse {
   node: {
@@ -30,13 +29,13 @@ export interface IssueGraphqlResponse {
  * @param context The context object
  * @returns True if a similar issue is found, false otherwise
  **/
-export async function issueMatching(context: Context) {
+export async function issueMatching(context: Context<"issues.opened" | "issues.edited" | "issues.labeled">) {
   const {
     logger,
     adapters: { supabase },
     octokit,
+    payload,
   } = context;
-  const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
   const issueContent = issue.body + issue.title;
   const commentStart = ">The following contributors may be suitable for this task:";
@@ -96,7 +95,7 @@ export async function issueMatching(context: Context) {
       }
     });
     // Fetch if any previous comment exists
-    const listIssues = await octokit.issues.listComments({
+    const listIssues = await octokit.rest.issues.listComments({
       owner: payload.repository.owner.login,
       repo: payload.repository.name,
       issue_number: issue.number,
@@ -107,7 +106,7 @@ export async function issueMatching(context: Context) {
     if (matchResultArray && matchResultArray.size === 0) {
       if (existingComment) {
         // If the comment already exists, delete it
-        await octokit.issues.deleteComment({
+        await octokit.rest.issues.deleteComment({
           owner: payload.repository.owner.login,
           repo: payload.repository.name,
           comment_id: existingComment.id,
@@ -118,14 +117,14 @@ export async function issueMatching(context: Context) {
     }
     const comment = commentBuilder(matchResultArray);
     if (existingComment) {
-      await context.octokit.issues.updateComment({
+      await context.octokit.rest.issues.updateComment({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         comment_id: existingComment.id,
         body: comment,
       });
     } else {
-      await context.octokit.issues.createComment({
+      await context.octokit.rest.issues.createComment({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         issue_number: payload.issue.number,

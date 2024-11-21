@@ -1,6 +1,5 @@
 import { IssueSimilaritySearchResult } from "../adapters/supabase/helpers/issues";
 import { Context } from "../types";
-import { IssuePayload } from "../types/payload";
 
 export interface IssueGraphqlResponse {
   node: {
@@ -25,13 +24,13 @@ export interface IssueGraphqlResponse {
  * @param context The context object
  * @returns True if a similar issue is found, false otherwise
  **/
-export async function issueChecker(context: Context): Promise<boolean> {
+export async function issueChecker(context: Context<"issues.opened" | "issues.edited">): Promise<boolean> {
   const {
     logger,
     adapters: { supabase },
     octokit,
+    payload,
   } = context;
-  const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
   let issueBody = issue.body;
   if (!issueBody) {
@@ -48,7 +47,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
       //To the issue body, add a footnote with the link to the similar issue
       const updatedBody = await handleMatchIssuesComment(context, payload, issueBody, processedIssues);
       issueBody = updatedBody || issueBody;
-      await octokit.issues.update({
+      await octokit.rest.issues.update({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         issue_number: issue.number,
@@ -67,7 +66,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
     //Use the IssueBody (Without footnotes) to update the issue when no similar issues are found
     //Only if the issue has "possible duplicate" footnotes, update the issue
     if (checkIfDuplicateFootNoteExists(issue.body || "")) {
-      await octokit.issues.update({
+      await octokit.rest.issues.update({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         issue_number: issue.number,
@@ -130,7 +129,13 @@ function findMostSimilarSentence(issueContent: string, similarIssueContent: stri
   return { sentence: mostSimilarSentence, similarity: maxSimilarity, index: mostSimilarIndex };
 }
 
-async function handleSimilarIssuesComment(context: Context, payload: IssuePayload, issueBody: string, issueNumber: number, issueList: IssueGraphqlResponse[]) {
+async function handleSimilarIssuesComment(
+  context: Context,
+  payload: Context<"issues.opened" | "issues.edited">["payload"],
+  issueBody: string,
+  issueNumber: number,
+  issueList: IssueGraphqlResponse[]
+) {
   const relevantIssues = issueList.filter((issue) =>
     matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
   );
@@ -170,7 +175,7 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
     updatedBody += "\n\n" + footnotes.join("");
   }
   // Update the issue with the modified body
-  await context.octokit.issues.update({
+  await context.octokit.rest.issues.update({
     owner: payload.repository.owner.login,
     repo: payload.repository.name,
     issue_number: issueNumber,
@@ -181,7 +186,7 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
 //When similarity is greater than match threshold, Add Caution mentioning the issues to which its is very much similar
 async function handleMatchIssuesComment(
   context: Context,
-  payload: IssuePayload,
+  payload: Context<"issues.opened" | "issues.edited">["payload"],
   issueBody: string,
   issueList: IssueGraphqlResponse[]
 ): Promise<string | undefined> {

@@ -1,12 +1,11 @@
 import { Context } from "../types";
-import { IssueTransferPayload } from "../types/payload";
 
-export async function issueTransfer(context: Context) {
+export async function issueTransfer(context: Context<"issues.transferred">) {
   const {
     logger,
     adapters: { supabase },
   } = context;
-  const { changes, issue } = (context as { payload: IssueTransferPayload }).payload;
+  const { changes, issue } = context.payload;
   const nodeId = issue.node_id;
   const { new_issue, new_repository } = changes;
   //Fetch the new details of the issue

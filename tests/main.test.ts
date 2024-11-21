@@ -1,23 +1,20 @@
 // cSpell:disable
 
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { drop } from "@mswjs/data";
-import { Octokit } from "@octokit/rest";
 import { Logs } from "@ubiquity-os/ubiquity-os-logger";
 import dotenv from "dotenv";
 import { runPlugin } from "../src/plugin";
 import { Env } from "../src/types";
-import { Context, SupportedEvents } from "../src/types/context";
+import { Context } from "../src/types/context";
 import { CommentMock, createMockAdapters } from "./__mocks__/adapter";
 import { db } from "./__mocks__/db";
 import { createComment, setupTests } from "./__mocks__/helpers";
 import { server } from "./__mocks__/node";
 import { STRINGS } from "./__mocks__/strings";
+import { customOctokit as Octokit } from "@ubiquity-os/plugin-sdk/octokit";
 
 dotenv.config();
-jest.requireActual("@octokit/rest");
-jest.requireActual("@supabase/supabase-js");
-const octokit = new Octokit();
 
 beforeAll(() => {
   server.listen();
@@ -106,7 +103,7 @@ function createContext(
   createComment(commentBody, commentId, nodeId); // create it first then pull it from the DB and feed it to _createContext
   const comment = db.issueComments.findFirst({
     where: { id: { equals: commentId } },
-  }) as unknown as unknown as SupportedEvents["issue_comment.created"]["payload"]["comment"];
+  }) as unknown as unknown as Context<"issue_comment.created">["payload"]["comment"];
 
   const context = createContextInner(repo, sender, issue1, comment, eventName);
   context.adapters = createMockAdapters(context) as unknown as Context["adapters"];
@@ -137,7 +134,7 @@ function createContextInner(
   repo: Context["payload"]["repository"],
   sender: Context["payload"]["sender"],
   issue: Context["payload"]["issue"],
-  comment: SupportedEvents["issue_comment.created"]["payload"]["comment"],
+  comment: Context<"issue_comment.created">["payload"]["comment"],
   eventName: Context["eventName"] = "issue_comment.created"
 ): Context {
   return {
@@ -159,6 +156,7 @@ function createContextInner(
     adapters: {} as Context["adapters"],
     logger: new Logs("debug"),
     env: {} as Env,
-    octokit: octokit,
+    octokit: new Octokit(),
+    command: null,
   };
 }
