@@ -22,19 +22,20 @@ export async function updateComment(context: Context<"issue_comment.edited">) {
       logger.error("Comment is on a pull request");
     }
     if ((await supabase.issue.getIssue(issueId)) === null) {
+      logger.info("Parent issue not found, creating new issue");
       await addIssue(context as unknown as Context<"issues.opened">);
     }
     await supabase.comment.updateComment(markdown, nodeId, authorId, payload, isPrivate, issueId);
+    logger.ok(`Successfully updated comment! ${payload.comment.id}`, payload.comment);
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(`Error updating comment:`, { error: error, stack: error.stack });
+      logger.error(`Error updating comment:`, { error: error, stack: error.stack, comment: payload.comment });
       throw error;
     } else {
-      logger.error(`Error updating comment:`, { err: error, error: new Error() });
+      logger.error(`Error updating comment:`, { err: error, comment: payload.comment });
       throw error;
     }
   }
 
-  logger.ok(`Successfully updated comment!`);
   logger.debug(`Exiting updateComment`);
 }

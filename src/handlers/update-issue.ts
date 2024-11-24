@@ -21,16 +21,15 @@ export async function updateIssue(context: Context<"issues.edited">) {
     //clean issue by removing footnotes
     const cleanedIssue = removeFootnotes(markdown);
     await supabase.issue.updateIssue(cleanedIssue, nodeId, payloadObject, isPrivate, authorId);
+    logger.ok(`Successfully updated issue! ${payload.issue.id}`, payload.issue);
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(`Error updating issue:`, { error: error, stack: error.stack });
+      logger.error(`Error updating issue:`, { error: error, stack: error.stack, issue: payload.issue });
       throw error;
     } else {
-      logger.error(`Error updating issue:`, { err: error, error: new Error() });
+      logger.error(`Error updating issue:`, { err: error, issue: payload.issue });
       throw error;
     }
   }
-
-  logger.ok(`Successfully updated issue!`);
   logger.debug(`Exiting updateIssue`);
 }

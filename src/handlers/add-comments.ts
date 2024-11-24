@@ -7,9 +7,10 @@ export async function addComments(context: Context<"issue_comment.created">) {
     adapters: { supabase },
     payload,
   } = context;
-  const markdown = payload.comment.body;
-  const authorId = payload.comment.user?.id || -1;
-  const nodeId = payload.comment.node_id;
+  const comment = payload.comment;
+  const markdown = comment.body;
+  const authorId = comment.user?.id || -1;
+  const nodeId = comment.node_id;
   const isPrivate = payload.repository.private;
   const issueId = payload.issue.node_id;
 
@@ -21,16 +22,16 @@ export async function addComments(context: Context<"issue_comment.created">) {
       logger.error("Comment is on a pull request");
     }
     if ((await supabase.issue.getIssue(issueId)) === null) {
+      logger.info("Parent issue not found, creating new issue");
       await addIssue(context as unknown as Context<"issues.opened">);
     }
     await supabase.comment.createComment(markdown, nodeId, authorId, payload, isPrivate, issueId);
-    logger.ok(`Created Comment with id: ${nodeId}`);
-    logger.ok(`Successfully created comment!`);
+    logger.ok(`Successfully created comment!`, comment);
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(`Error creating comment:`, { error: error, stack: error.stack });
+      logger.error(`Error creating comment:`, { error: error, stack: error.stack, comment: comment });
     } else {
-      logger.error(`Error creating comment:`, { err: error, error: new Error() });
+      logger.error(`Error creating comment:`, { err: error, comment: comment });
     }
   }
   logger.debug(`Exiting addComments`);

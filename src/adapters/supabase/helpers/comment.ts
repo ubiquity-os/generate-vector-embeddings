@@ -26,32 +26,42 @@ export class Comment extends SuperSupabase {
     issueId: string
   ) {
     //First Check if the comment already exists
-    const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
-    if (error) {
-      this.context.logger.error("Error creating comment", { err: error });
+    const { data: existingData, error: existingError } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
+    if (existingError) {
+      this.context.logger.error("Error creating comment", { err: existingError });
       return;
     }
-    if (data && data.length > 0) {
+    if (existingData && existingData.length > 0) {
       this.context.logger.error("Comment already exists");
       return;
-    } else {
-      //Create the embedding for this comment
-      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
-      let plaintext: string | null = markdownToPlainText(markdown);
-      if (isPrivate) {
-        markdown = null as string | null;
-        payload = null as Record<string, unknown> | null;
-        plaintext = null as string | null;
-      }
-      const { error } = await this.supabase
-        .from("issue_comments")
-        .insert([{ id: commentNodeId, markdown, plaintext, author_id: authorId, payload, embedding: embedding, issue_id: issueId }]);
-      if (error) {
-        this.context.logger.error("Error creating comment", { err: error });
-        return;
-      }
     }
-    this.context.logger.info("Comment created successfully");
+    //Create the embedding for this comment
+    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+    let plaintext: string | null = markdownToPlainText(markdown);
+    if (isPrivate) {
+      markdown = null as string | null;
+      payload = null as Record<string, unknown> | null;
+      plaintext = null as string | null;
+    }
+    const { data, error } = await this.supabase
+      .from("issue_comments")
+      .insert([{ id: commentNodeId, markdown, plaintext, author_id: authorId, payload, embedding: embedding, issue_id: issueId }]);
+    if (error) {
+      this.context.logger.error("Failed to create comment in database", {
+        Error: error,
+        commentData: {
+          id: commentNodeId,
+          markdown,
+          plaintext,
+          author_id: authorId,
+          payload,
+          embedding,
+          issue_id: issueId,
+        },
+      });
+      return;
+    }
+    this.context.logger.info(`Comment created successfully with id: ${commentNodeId}`, { data });
   }
 
   async updateComment(
@@ -80,15 +90,42 @@ export class Comment extends SuperSupabase {
         .update({ markdown, plaintext, embedding: embedding, payload, modified_at: new Date() })
         .eq("id", commentNodeId);
       if (error) {
-        this.context.logger.error("Error updating comment", { err: error });
+        this.context.logger.error("Error updating comment", {
+          Error: error,
+          commentData: {
+            id: commentNodeId,
+            markdown,
+            plaintext,
+            embedding,
+            payload,
+            modified_at: new Date(),
+          },
+        });
+        return;
       }
+      this.context.logger.info("Comment updated successfully with id: " + commentNodeId, {
+        commentData: {
+          id: commentNodeId,
+          markdown,
+          plaintext,
+          embedding,
+          payload,
+          modified_at: new Date(),
+        },
+      });
     }
   }
 
   async getComment(commentNodeId: string): Promise<CommentType[] | null> {
     const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
-      this.context.logger.error("Error getting comment", { err: error });
+      this.context.logger.error("Error getting comment", {
+        Error: error,
+        commentData: {
+          id: commentNodeId,
+        },
+      });
+      return null;
     }
     return data;
   }
@@ -96,7 +133,14 @@ export class Comment extends SuperSupabase {
   async deleteComment(commentNodeId: string) {
     const { error } = await this.supabase.from("issue_comments").delete().eq("id", commentNodeId);
     if (error) {
-      this.context.logger.error("Error deleting comment", { err: error });
+      this.context.logger.error("Error deleting comment", {
+        Error: error,
+        commentData: {
+          id: commentNodeId,
+        },
+      });
+      return;
     }
+    this.context.logger.info("Comment deleted successfully with id: " + commentNodeId);
   }
 }

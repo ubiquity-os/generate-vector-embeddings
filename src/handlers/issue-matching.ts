@@ -134,8 +134,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     }
   }
 
-  logger.ok(`Successfully created issue comment!`);
-  logger.debug(`Exiting issueMatching handler`);
+  logger.ok(`Exiting issueMatching handler!`, { similarIssues: similarIssues || "No similar issues found" });
 }
 
 /**

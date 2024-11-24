@@ -29,11 +29,28 @@ export class Issues extends SuperSupabase {
     //First Check if the issue already exists
     const { data, error } = await this.supabase.from("issues").select("*").eq("id", issueNodeId);
     if (error) {
-      this.context.logger.error("Error creating issue", { err: error });
+      this.context.logger.error("Error creating issue", {
+        Error: error,
+        issueData: {
+          id: issueNodeId,
+          payload,
+          isPrivate,
+          markdown,
+          authorId,
+        },
+      });
       return;
     }
     if (data && data.length > 0) {
-      this.context.logger.info("Issue already exists");
+      this.context.logger.info("Issue already exists", {
+        issueData: {
+          id: issueNodeId,
+          payload,
+          isPrivate,
+          markdown,
+          authorId,
+        },
+      });
       return;
     } else {
       const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown, "document");
@@ -45,11 +62,28 @@ export class Issues extends SuperSupabase {
       }
       const { error } = await this.supabase.from("issues").insert([{ id: issueNodeId, payload, markdown, plaintext, author_id: authorId, embedding }]);
       if (error) {
-        this.context.logger.error("Error creating issue", { err: error });
+        this.context.logger.error("Error creating issue: " + error.message, {
+          Error: error,
+          issueData: {
+            id: issueNodeId,
+            payload,
+            isPrivate,
+            markdown,
+            authorId,
+          },
+        });
         return;
       }
     }
-    this.context.logger.info("Issue created successfully");
+    this.context.logger.info("Issue created successfully with id: " + issueNodeId, {
+      issueData: {
+        id: issueNodeId,
+        payload,
+        isPrivate,
+        markdown,
+        authorId,
+      },
+    });
   }
 
   async updateIssue(markdown: string | null, issueNodeId: string, payload: Record<string, unknown> | null, isPrivate: boolean, authorId: number) {
@@ -61,54 +95,99 @@ export class Issues extends SuperSupabase {
       plaintext = null;
     }
     const issues = await this.getIssue(issueNodeId);
-    if (!issues) {
-      this.context.logger.info("Issue does not exist, creating a new one");
-      await this.createIssue(issueNodeId, payload, isPrivate, markdown, authorId);
-    } else {
-      const { error } = await this.supabase.from("issues").update({ markdown, plaintext, embedding, payload, modified_at: new Date() }).eq("id", issueNodeId);
-      if (error) {
-        this.context.logger.error("Error updating comment", { err: error });
+    try {
+      if (!issues) {
+        this.context.logger.info("Issue not found, creating new issue with id: " + issueNodeId);
+        await this.createIssue(issueNodeId, payload, isPrivate, markdown, authorId);
+      } else {
+        const { error } = await this.supabase.from("issues").update({ markdown, plaintext, embedding, payload, modified_at: new Date() }).eq("id", issueNodeId);
+        if (error) {
+          this.context.logger.error("Error updating issue", {
+            Error: error,
+            issueData: {
+              id: issueNodeId,
+              payload,
+              isPrivate,
+              markdown,
+              authorId,
+            },
+          });
+        }
       }
+    } catch (error) {
+      this.context.logger.error("Error updating issue", {
+        Error: error,
+        issueData: {
+          id: issueNodeId,
+          payload,
+          isPrivate,
+          markdown,
+          authorId,
+        },
+      });
     }
   }
 
   async deleteIssue(issueNodeId: string) {
     const { error } = await this.supabase.from("issues").delete().eq("id", issueNodeId);
     if (error) {
-      this.context.logger.error("Error deleting comment", { err: error });
+      this.context.logger.error("Error deleting issue: " + error.message, {
+        Error: error,
+        issueData: {
+          id: issueNodeId,
+        },
+      });
+      return;
     }
+    this.context.logger.info("Issue deleted successfully with id: " + issueNodeId, {
+      issueData: {
+        id: issueNodeId,
+      },
+    });
   }
 
   async getIssue(issueNodeId: string): Promise<IssueType[] | null> {
-    const { data, error } = await this.supabase
-      .from("issues") // Provide the second type argument
-      .select("*")
-      .eq("id", issueNodeId)
-      .returns<IssueType[]>();
+    const { data, error } = await this.supabase.from("issues").select("*").eq("id", issueNodeId).returns<IssueType[]>();
     if (error || !data || data.length === 0) {
-      if (error) {
-        this.context.logger.error("Error getting issue", { err: error });
-      } else {
-        this.context.logger.error("Error getting issue: No data found");
-      }
+      this.context.logger.error("Error getting issue", {
+        Error: error,
+        issueData: {
+          id: issueNodeId,
+        },
+      });
       return null;
     }
     return data;
   }
 
-  async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[] | null> {
-    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown, "query");
-    const { data, error } = await this.supabase.rpc("find_similar_issues", {
-      current_id: currentId,
-      query_embedding: embedding,
-      threshold: threshold,
-      top_k: 5,
-    });
-    if (error) {
-      this.context.logger.error("Error finding similar issues", { err: error });
+  async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[]> {
+    try {
+      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown, "query");
+      const { data, error } = await this.supabase.rpc("find_similar_issues", {
+        current_id: currentId,
+        query_embedding: embedding,
+        threshold,
+        top_k: 5,
+      });
+      if (error) {
+        this.context.logger.error("Error finding similar issues", {
+          Error: error,
+          markdown,
+          threshold,
+          currentId,
+        });
+        return [];
+      }
+      return data;
+    } catch (error) {
+      this.context.logger.error("Error finding similar issues", {
+        Error: error,
+        markdown,
+        threshold,
+        currentId,
+      });
       return [];
     }
-    return data;
   }
 
   async updatePayload(issueNodeId: string, payload: Record<string, unknown>) {

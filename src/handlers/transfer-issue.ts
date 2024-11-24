@@ -19,13 +19,15 @@ export async function issueTransfer(context: Context<"issues.transferred">) {
   try {
     await supabase.issue.deleteIssue(nodeId);
     await supabase.issue.createIssue(newIssueNodeId, new_issue, isPrivate, markdown, authorId);
+    logger.ok(`Successfully transferred issue!`, new_issue);
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(`Error transferring issue:`, { error: error, stack: error.stack });
+      logger.error(`Error transferring issue:`, { error: error, stack: error.stack, issue: new_issue });
       throw error;
     } else {
-      logger.error(`Error transferring issue:`, { err: error, error: new Error() });
+      logger.error(`Error transferring issue:`, { err: error, error: new Error(), issue: new_issue });
       throw error;
     }
   }
+  logger.debug(`Exiting issueTransfer`);
 }
