@@ -28,7 +28,7 @@ export class Comment extends SuperSupabase {
     //First Check if the comment already exists
     const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
-      this.context.logger.error("Error creating comment", { error });
+      this.context.logger.error("Error creating comment", { err: error });
       return;
     }
     if (data && data.length > 0) {
@@ -47,7 +47,7 @@ export class Comment extends SuperSupabase {
         .from("issue_comments")
         .insert([{ id: commentNodeId, markdown, plaintext, author_id: authorId, payload, embedding: embedding, issue_id: issueId }]);
       if (error) {
-        this.context.logger.error("Error creating comment", { error });
+        this.context.logger.error("Error creating comment", { err: error });
         return;
       }
     }
@@ -80,7 +80,7 @@ export class Comment extends SuperSupabase {
         .update({ markdown, plaintext, embedding: embedding, payload, modified_at: new Date() })
         .eq("id", commentNodeId);
       if (error) {
-        this.context.logger.error("Error updating comment", { error });
+        this.context.logger.error("Error updating comment", { err: error });
       }
     }
   }
@@ -88,7 +88,7 @@ export class Comment extends SuperSupabase {
   async getComment(commentNodeId: string): Promise<CommentType[] | null> {
     const { data, error } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
     if (error) {
-      this.context.logger.error("Error getting comment", { error });
+      this.context.logger.error("Error getting comment", { err: error });
     }
     return data;
   }
@@ -96,7 +96,7 @@ export class Comment extends SuperSupabase {
   async deleteComment(commentNodeId: string) {
     const { error } = await this.supabase.from("issue_comments").delete().eq("id", commentNodeId);
     if (error) {
-      this.context.logger.error("Error deleting comment", { error });
+      this.context.logger.error("Error deleting comment", { err: error });
     }
   }
 }

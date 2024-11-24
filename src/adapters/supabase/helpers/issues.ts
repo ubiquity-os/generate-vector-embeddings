@@ -29,7 +29,7 @@ export class Issues extends SuperSupabase {
     //First Check if the issue already exists
     const { data, error } = await this.supabase.from("issues").select("*").eq("id", issueNodeId);
     if (error) {
-      this.context.logger.error("Error creating issue", { error });
+      this.context.logger.error("Error creating issue", { err: error });
       return;
     }
     if (data && data.length > 0) {
@@ -45,7 +45,7 @@ export class Issues extends SuperSupabase {
       }
       const { error } = await this.supabase.from("issues").insert([{ id: issueNodeId, payload, markdown, plaintext, author_id: authorId, embedding }]);
       if (error) {
-        this.context.logger.error("Error creating issue", { error });
+        this.context.logger.error("Error creating issue", { err: error });
         return;
       }
     }
@@ -68,7 +68,7 @@ export class Issues extends SuperSupabase {
       const { error } = await this.supabase.from("issues").update({ markdown, plaintext, embedding, payload, modified_at: new Date() }).eq("id", issueNodeId);
 
       if (error) {
-        this.context.logger.error("Error updating comment", { error });
+        this.context.logger.error("Error updating comment", { err: error });
       }
     }
   }
@@ -76,7 +76,7 @@ export class Issues extends SuperSupabase {
   async deleteIssue(issueNodeId: string) {
     const { error } = await this.supabase.from("issues").delete().eq("id", issueNodeId);
     if (error) {
-      this.context.logger.error("Error deleting comment", { error });
+      this.context.logger.error("Error deleting comment", { err: error });
     }
   }
 
@@ -87,7 +87,7 @@ export class Issues extends SuperSupabase {
       .eq("id", issueNodeId)
       .returns<IssueType[]>();
     if (error) {
-      this.context.logger.error("Error getting issue", { error });
+      this.context.logger.error("Error getting issue", { err: error });
       return null;
     }
     return data;
@@ -102,7 +102,7 @@ export class Issues extends SuperSupabase {
       top_k: 5,
     });
     if (error) {
-      this.context.logger.error("Error finding similar issues", { error });
+      this.context.logger.error("Error finding similar issues", { err: error });
       return [];
     }
     return data;
@@ -111,7 +111,7 @@ export class Issues extends SuperSupabase {
   async updatePayload(issueNodeId: string, payload: Record<string, unknown>) {
     const { error } = await this.supabase.from("issues").update({ payload }).eq("id", issueNodeId);
     if (error) {
-      this.context.logger.error("Error updating issue payload", { error });
+      this.context.logger.error("Error updating issue payload", { err: error });
     }
   }
 }
