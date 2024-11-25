@@ -35,7 +35,7 @@ jobs:
           node-version: "20.10.0"
 
       - name: Execute plugin
-        run: node dist/main.js
+        run: node dist/index.js
         env:
           PLUGIN_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
