@@ -37,30 +37,6 @@ export class Issue extends SuperSupabase {
     super(supabase, context);
   }
 
-  async findSimilarIssues(params: FindSimilarIssuesParams): Promise<IssueSimilaritySearchResult[]> {
-    const { markdown, currentId, threshold } = params;
-    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
-    const { data, error } = await this.supabase.rpc("match_issues", {
-      query_embedding: embedding,
-      match_threshold: threshold,
-      current_id: currentId,
-    });
-
-    if (error) {
-      this.context.logger.error("Error finding similar issues", {
-        Error: error,
-        params,
-      });
-      return [];
-    }
-
-    return data.map((item: IssueSimilaritySearchResult) => ({
-      id: item.id,
-      issue_id: item.id,
-      similarity: item.similarity,
-    }));
-  }
-
   async createIssue(issueData: IssueData) {
     const { isPrivate } = issueData;
     //First Check if the issue already exists
@@ -70,6 +46,7 @@ export class Issue extends SuperSupabase {
         Error: existingError,
         issueData,
       });
+      return;
     }
     if (existingData && existingData.length > 0) {
       this.context.logger.error("Issue already exists", {
@@ -77,6 +54,7 @@ export class Issue extends SuperSupabase {
       });
       return;
     }
+
     //Create the embedding for this issue
     const embedding = await this.context.adapters.voyage.embedding.createEmbedding(issueData.markdown);
     let plaintext: string | null = markdownToPlainText(issueData.markdown);
@@ -88,9 +66,11 @@ export class Issue extends SuperSupabase {
       finalPayload = null;
       plaintext = null;
     }
+
     const { data, error } = await this.supabase
       .from("issues")
       .insert([{ ...issueData, markdown: finalMarkdown, plaintext, payload: finalPayload, embedding: embedding }]);
+    
     if (error) {
       this.context.logger.error("Failed to create issue in database", {
         Error: error,
@@ -114,32 +94,30 @@ export class Issue extends SuperSupabase {
       finalPayload = null;
       plaintext = null;
     }
+
     const issues = await this.getIssue(issueData.id);
-    if (issues && issues.length == 0) {
+    if (!issues || issues.length === 0) {
       this.context.logger.info("Issue does not exist, creating a new one");
       await this.createIssue({ ...issueData, markdown: finalMarkdown, payload: finalPayload, isPrivate });
-    } else {
-      const { error } = await this.supabase
-        .from("issues")
-        .update({ markdown: finalMarkdown, plaintext, embedding: embedding, payload: finalPayload, modified_at: new Date() })
-        .eq("id", issueData.id);
-      if (error) {
-        this.context.logger.error("Error updating issue", {
-          Error: error,
-          issueData: {
-            ...issueData,
-            markdown: finalMarkdown,
-            plaintext,
-            embedding,
-            payload: finalPayload,
-            modified_at: new Date(),
-          },
-        });
-        return;
-      }
-      this.context.logger.info("Issue updated successfully with id: " + issueData.id, {
+      return;
+    }
+
+    const { error } = await this.supabase
+      .from("issues")
+      .update({
+        markdown: finalMarkdown,
+        plaintext,
+        embedding,
+        payload: finalPayload,
+        modified_at: new Date(),
+      })
+      .eq("id", issueData.id);
+
+    if (error) {
+      this.context.logger.error("Error updating issue", {
+        Error: error,
         issueData: {
-          ...issueData,
+          id: issueData.id,
           markdown: finalMarkdown,
           plaintext,
           embedding,
@@ -147,7 +125,19 @@ export class Issue extends SuperSupabase {
           modified_at: new Date(),
         },
       });
+      return;
     }
+
+    this.context.logger.info("Issue updated successfully with id: " + issueData.id, {
+      issueData: {
+        id: issueData.id,
+        markdown: finalMarkdown,
+        plaintext,
+        embedding,
+        payload: finalPayload,
+        modified_at: new Date(),
+      },
+    });
   }
 
   async getIssue(issueNodeId: string): Promise<IssueType[] | null> {
@@ -168,7 +158,26 @@ export class Issue extends SuperSupabase {
     const { error } = await this.supabase.from("issues").delete().eq("id", issueNodeId);
     if (error) {
       this.context.logger.error("Error deleting issue", { err: error });
+      return;
     }
     this.context.logger.info("Issue deleted successfully with id: " + issueNodeId);
+  }
+
+  async findSimilarIssues({ markdown, currentId, threshold }: FindSimilarIssuesParams): Promise<IssueSimilaritySearchResult[] | null> {
+    const { data, error } = await this.supabase.rpc("find_similar_issues", {
+      markdown,
+      current_id: currentId,
+      threshold,
+    });
+    if (error) {
+      this.context.logger.error("Error finding similar issues", {
+        Error: error,
+        markdown,
+        currentId,
+        threshold,
+      });
+      return null;
+    }
+    return data;
   }
 }
