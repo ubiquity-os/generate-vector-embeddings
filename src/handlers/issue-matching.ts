@@ -1,4 +1,5 @@
 import { Context } from "../types";
+import { IssueSimilaritySearchResult } from "../adapters/supabase/helpers/issues";
 import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 
 export interface IssueGraphqlResponse {
@@ -41,10 +42,14 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
   const issueContent = issue.body + issue.title;
   const commentStart = ">The following contributors may be suitable for this task:";
   const matchResultArray: Map<string, Array<string>> = new Map();
-  const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.jobMatchingThreshold, issue.node_id);
+  const similarIssues = await supabase.issue.findSimilarIssues({
+    markdown: issueContent,
+    threshold: context.config.jobMatchingThreshold,
+    currentId: issue.node_id,
+  });
   if (similarIssues && similarIssues.length > 0) {
-    similarIssues.sort((a, b) => b.similarity - a.similarity); // Sort by similarity
-    const fetchPromises = similarIssues.map(async (issue) => {
+    similarIssues.sort((a: IssueSimilaritySearchResult, b: IssueSimilaritySearchResult) => b.similarity - a.similarity); // Sort by similarity
+    const fetchPromises = similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
       const issueObject: IssueGraphqlResponse = await context.octokit.graphql(
         `query ($issueNodeId: ID!) {
             node(id: $issueNodeId) {
@@ -75,10 +80,10 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
       return issueObject;
     });
     const issueList = await Promise.all(fetchPromises);
-    issueList.forEach((issue) => {
+    issueList.forEach((issue: IssueGraphqlResponse) => {
       if (issue.node.closed && issue.node.stateReason === "COMPLETED" && issue.node.assignees.nodes.length > 0) {
         const assignees = issue.node.assignees.nodes;
-        assignees.forEach((assignee) => {
+        assignees.forEach((assignee: { login: string; url: string }) => {
           const similarityPercentage = Math.round(issue.similarity * 100);
           const issueLink = issue.node.url.replace(/https?:\/\/github.com/, "https://www.github.com");
           if (matchResultArray.has(assignee.login)) {
@@ -144,9 +149,9 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
  */
 function commentBuilder(matchResultArray: Map<string, Array<string>>): string {
   const commentLines: string[] = [">[!NOTE]", ">The following contributors may be suitable for this task:"];
-  matchResultArray.forEach((issues, assignee) => {
+  matchResultArray.forEach((issues: Array<string>, assignee: string) => {
     commentLines.push(`>### [${assignee}](https://www.github.com/${assignee})`);
-    issues.forEach((issue) => {
+    issues.forEach((issue: string) => {
       commentLines.push(issue);
     });
   });

@@ -34,11 +34,15 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
   const issue = payload.issue;
   let issueBody = issue.body;
   if (!issueBody) {
-    logger.info("Issue body is empty");
+    logger.info("Issue body is empty", { issue });
     return false;
   }
   issueBody = removeFootnotes(issueBody);
-  const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issueBody), 0.7, issue.node_id);
+  const similarIssues = await supabase.issue.findSimilarIssues({
+    markdown: issue.title + removeFootnotes(issueBody),
+    currentId: issue.node_id,
+    threshold: context.config.warningThreshold,
+  });
   if (similarIssues && similarIssues.length > 0) {
     let processedIssues = await processSimilarIssues(similarIssues, context, issueBody);
     processedIssues = processedIssues.filter((issue) =>
@@ -301,7 +305,12 @@ export function removeCautionMessages(content: string): string {
   return content.replace(cautionRegex, "");
 }
 
-function checkIfDuplicateFootNoteExists(content: string): boolean {
+/**
+ * Checks if a duplicate footnote exists in the content.
+ * @param content The content to check for duplicate footnotes
+ * @returns True if a duplicate footnote exists, false otherwise
+ */
+export function checkIfDuplicateFootNoteExists(content: string): boolean {
   const footnoteDefRegex = /\[\^(\d+)\^\]: ⚠ \d+% possible duplicate - [^\n]+(\n|$)/g;
   const footnotes = content.match(footnoteDefRegex);
   return !!footnotes;

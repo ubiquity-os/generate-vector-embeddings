@@ -8,9 +8,9 @@ export async function addIssue(context: Context<"issues.opened">) {
     payload,
   } = context;
   const issue = payload.issue;
-  const markdown = issue.body + " " + issue.title || null;
+  const markdown = payload.issue.body && payload.issue.title ? `${payload.issue.body} ${payload.issue.title}` : null;
   const authorId = issue.user?.id || -1;
-  const nodeId = issue.node_id;
+  const id = issue.node_id;
   const isPrivate = payload.repository.private;
 
   try {
@@ -19,7 +19,7 @@ export async function addIssue(context: Context<"issues.opened">) {
       return;
     }
     const cleanedIssue = removeFootnotes(markdown);
-    await supabase.issue.createIssue(nodeId, payload, isPrivate, cleanedIssue, authorId);
+    await supabase.issue.createIssue({ id, payload, isPrivate, markdown: cleanedIssue, author_id: authorId });
     logger.ok(`Successfully created issue!`, issue);
   } catch (error) {
     if (error instanceof Error) {

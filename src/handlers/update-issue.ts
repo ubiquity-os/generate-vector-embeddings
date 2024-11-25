@@ -7,10 +7,9 @@ export async function updateIssue(context: Context<"issues.edited">) {
     adapters: { supabase },
     payload,
   } = context;
-  const payloadObject = payload;
-  const nodeId = payload.issue.node_id;
+  const id = payload.issue.node_id;
   const isPrivate = payload.repository.private;
-  const markdown = payload.issue.body + " " + payload.issue.title || null;
+  const markdown = payload.issue.body && payload.issue.title ? payload.issue.body + " " + payload.issue.title : null;
   const authorId = payload.issue.user?.id || -1;
   // Fetch the previous issue and update it in the db
   try {
@@ -20,7 +19,7 @@ export async function updateIssue(context: Context<"issues.edited">) {
     }
     //clean issue by removing footnotes
     const cleanedIssue = removeFootnotes(markdown);
-    await supabase.issue.updateIssue(cleanedIssue, nodeId, payloadObject, isPrivate, authorId);
+    await supabase.issue.updateIssue({ markdown: cleanedIssue, id, payload, isPrivate, author_id: authorId });
     logger.ok(`Successfully updated issue! ${payload.issue.id}`, payload.issue);
   } catch (error) {
     if (error instanceof Error) {

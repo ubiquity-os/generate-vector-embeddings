@@ -26,45 +26,57 @@ export function createMockAdapters(context: Context) {
     supabase: {
       comment: {
         createComment: jest.fn(
-          async (
-            plaintext: string | null,
-            commentNodeId: string,
-            authorId: number,
-            payload: Record<string, unknown> | null,
-            isPrivate: boolean,
-            issueId: string
-          ) => {
-            if (commentMap.has(commentNodeId)) {
+          async (commentData: {
+            markdown: string | null;
+            id: string;
+            author_id: number;
+            payload: Record<string, unknown> | null;
+            isPrivate: boolean;
+            issue_id: string;
+          }) => {
+            if (commentMap.has(commentData.id)) {
               throw new Error("Comment already exists");
             }
-            const embedding = await context.adapters.voyage.embedding.createEmbedding(plaintext);
-            if (isPrivate) {
-              plaintext = null;
+            const embedding = await context.adapters.voyage.embedding.createEmbedding(commentData.markdown);
+            if (commentData.isPrivate) {
+              commentData.markdown = null;
             }
-            commentMap.set(commentNodeId, { id: commentNodeId, plaintext, author_id: authorId, embedding, issue_id: issueId });
+            commentMap.set(commentData.id, {
+              id: commentData.id,
+              plaintext: commentData.markdown,
+              author_id: commentData.author_id,
+              embedding,
+              issue_id: commentData.issue_id,
+            });
           }
         ),
         updateComment: jest.fn(
-          async (
-            plaintext: string | null,
-            commentNodeId: string,
-            authorId: number,
-            payload: Record<string, unknown> | null,
-            isPrivate: boolean,
-            issueId: string
-          ) => {
-            if (!commentMap.has(commentNodeId)) {
+          async (commentData: {
+            markdown: string | null;
+            id: string;
+            author_id: number;
+            payload: Record<string, unknown> | null;
+            isPrivate: boolean;
+            issue_id: string;
+          }) => {
+            if (!commentMap.has(commentData.id)) {
               throw new Error(STRINGS.COMMENT_DOES_NOT_EXIST);
             }
-            const originalComment = commentMap.get(commentNodeId);
+            const originalComment = commentMap.get(commentData.id);
             if (!originalComment) {
               throw new Error(STRINGS.COMMENT_DOES_NOT_EXIST);
             }
-            const embedding = await context.adapters.voyage.embedding.createEmbedding(plaintext);
-            if (isPrivate) {
-              plaintext = null;
+            const embedding = await context.adapters.voyage.embedding.createEmbedding(commentData.markdown);
+            if (commentData.isPrivate) {
+              commentData.markdown = null;
             }
-            commentMap.set(commentNodeId, { id: issueId, plaintext, author_id: authorId, embedding, payload });
+            commentMap.set(commentData.id, {
+              id: commentData.issue_id,
+              plaintext: commentData.markdown,
+              author_id: commentData.author_id,
+              embedding,
+              payload: commentData.payload,
+            });
           }
         ),
         deleteComment: jest.fn(async (commentNodeId: string) => {

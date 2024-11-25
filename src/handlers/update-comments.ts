@@ -9,7 +9,7 @@ export async function updateComment(context: Context<"issue_comment.edited">) {
   } = context;
   const markdown = payload.comment.body;
   const authorId = payload.comment.user?.id || -1;
-  const nodeId = payload.comment.node_id;
+  const id = payload.comment.node_id;
   const isPrivate = payload.repository.private;
   const issueId = payload.issue.node_id;
 
@@ -25,7 +25,7 @@ export async function updateComment(context: Context<"issue_comment.edited">) {
       logger.info("Parent issue not found, creating new issue");
       await addIssue(context as unknown as Context<"issues.opened">);
     }
-    await supabase.comment.updateComment(markdown, nodeId, authorId, payload, isPrivate, issueId);
+    await supabase.comment.updateComment({ markdown, id, author_id: authorId, payload, isPrivate, issue_id: issueId });
     logger.ok(`Successfully updated comment! ${payload.comment.id}`, payload.comment);
   } catch (error) {
     if (error instanceof Error) {

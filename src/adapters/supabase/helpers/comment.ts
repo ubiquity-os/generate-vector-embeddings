@@ -12,104 +12,104 @@ export interface CommentType {
   embedding: number[];
 }
 
+interface CommentData {
+  markdown: string | null;
+  id: string;
+  author_id: number;
+  payload: Record<string, unknown> | null;
+  isPrivate: boolean;
+  issue_id: string;
+}
+
 export class Comment extends SuperSupabase {
   constructor(supabase: SupabaseClient, context: Context) {
     super(supabase, context);
   }
 
-  async createComment(
-    markdown: string | null,
-    commentNodeId: string,
-    authorId: number,
-    payload: Record<string, unknown> | null,
-    isPrivate: boolean,
-    issueId: string
-  ) {
+  async createComment(commentData: CommentData) {
+    const { isPrivate } = commentData;
     //First Check if the comment already exists
-    const { data: existingData, error: existingError } = await this.supabase.from("issue_comments").select("*").eq("id", commentNodeId);
+    const { data: existingData, error: existingError } = await this.supabase.from("issue_comments").select("*").eq("id", commentData.id);
     if (existingError) {
-      this.context.logger.error("Error creating comment", { err: existingError });
-      return;
-    }
-    if (existingData && existingData.length > 0) {
-      this.context.logger.error("Comment already exists");
-      return;
-    }
-    //Create the embedding for this comment
-    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
-    let plaintext: string | null = markdownToPlainText(markdown);
-    if (isPrivate) {
-      markdown = null as string | null;
-      payload = null as Record<string, unknown> | null;
-      plaintext = null as string | null;
-    }
-    const { data, error } = await this.supabase
-      .from("issue_comments")
-      .insert([{ id: commentNodeId, markdown, plaintext, author_id: authorId, payload, embedding: embedding, issue_id: issueId }]);
-    if (error) {
-      this.context.logger.error("Failed to create comment in database", {
-        Error: error,
-        commentData: {
-          id: commentNodeId,
-          markdown,
-          plaintext,
-          author_id: authorId,
-          payload,
-          embedding,
-          issue_id: issueId,
-        },
+      this.context.logger.error("Error creating comment", {
+        Error: existingError,
+        commentData,
       });
       return;
     }
-    this.context.logger.info(`Comment created successfully with id: ${commentNodeId}`, { data });
+    if (existingData && existingData.length > 0) {
+      this.context.logger.error("Comment already exists", {
+        commentData: commentData,
+      });
+      return;
+    }
+    //Create the embedding for this comment
+    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(commentData.markdown);
+    let plaintext: string | null = markdownToPlainText(commentData.markdown);
+    let finalMarkdown = commentData.markdown;
+    let finalPayload = commentData.payload;
+
+    if (isPrivate) {
+      finalMarkdown = null;
+      finalPayload = null;
+      plaintext = null;
+    }
+    const { data, error } = await this.supabase
+      .from("issue_comments")
+      .insert([{ ...commentData, markdown: finalMarkdown, plaintext, payload: finalPayload, embedding: embedding }]);
+    if (error) {
+      this.context.logger.error("Failed to create comment in database", {
+        Error: error,
+        commentData,
+      });
+      return;
+    }
+    this.context.logger.info(`Comment created successfully with id: ${commentData.id}`, { data });
   }
 
-  async updateComment(
-    markdown: string | null,
-    commentNodeId: string,
-    authorId: number,
-    payload: Record<string, unknown> | null,
-    isPrivate: boolean,
-    issueId: string
-  ) {
+  async updateComment(commentData: CommentData) {
+    const { isPrivate } = commentData;
     //Create the embedding for this comment
-    const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(markdown));
-    let plaintext: string | null = markdownToPlainText(markdown);
+    const embedding = Array.from(await this.context.adapters.voyage.embedding.createEmbedding(commentData.markdown));
+    let plaintext: string | null = markdownToPlainText(commentData.markdown);
+    let finalMarkdown = commentData.markdown;
+    let finalPayload = commentData.payload;
+
     if (isPrivate) {
-      markdown = null as string | null;
-      payload = null as Record<string, unknown> | null;
-      plaintext = null as string | null;
+      finalMarkdown = null;
+      finalPayload = null;
+      plaintext = null;
     }
-    const comments = await this.getComment(commentNodeId);
+    const comments = await this.getComment(commentData.id);
     if (comments && comments.length == 0) {
       this.context.logger.info("Comment does not exist, creating a new one");
-      await this.createComment(markdown, commentNodeId, authorId, payload, isPrivate, issueId);
+      await this.createComment({ ...commentData, markdown: finalMarkdown, payload: finalPayload, isPrivate });
     } else {
       const { error } = await this.supabase
         .from("issue_comments")
-        .update({ markdown, plaintext, embedding: embedding, payload, modified_at: new Date() })
-        .eq("id", commentNodeId);
+        .update({ markdown: finalMarkdown, plaintext, embedding: embedding, payload: finalPayload, modified_at: new Date() })
+        .eq("id", commentData.id);
       if (error) {
         this.context.logger.error("Error updating comment", {
           Error: error,
           commentData: {
-            id: commentNodeId,
-            markdown,
+            id: commentData.id,
+            markdown: finalMarkdown,
             plaintext,
             embedding,
-            payload,
+            payload: finalPayload,
             modified_at: new Date(),
           },
         });
         return;
       }
-      this.context.logger.info("Comment updated successfully with id: " + commentNodeId, {
+      this.context.logger.info("Comment updated successfully with id: " + commentData.id, {
         commentData: {
-          id: commentNodeId,
-          markdown,
+          id: commentData.id,
+          markdown: finalMarkdown,
           plaintext,
           embedding,
-          payload,
+          payload: finalPayload,
           modified_at: new Date(),
         },
       });
