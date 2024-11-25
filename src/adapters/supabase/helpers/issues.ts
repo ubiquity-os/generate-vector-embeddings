@@ -26,9 +26,39 @@ interface IssueData {
   isPrivate: boolean;
 }
 
+interface FindSimilarIssuesParams {
+  markdown: string;
+  currentId: string;
+  threshold: number;
+}
+
 export class Issue extends SuperSupabase {
   constructor(supabase: SupabaseClient, context: Context) {
     super(supabase, context);
+  }
+
+  async findSimilarIssues(params: FindSimilarIssuesParams): Promise<IssueSimilaritySearchResult[]> {
+    const { markdown, currentId, threshold } = params;
+    const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+    const { data, error } = await this.supabase.rpc("match_issues", {
+      query_embedding: embedding,
+      match_threshold: threshold,
+      current_id: currentId,
+    });
+
+    if (error) {
+      this.context.logger.error("Error finding similar issues", {
+        Error: error,
+        params,
+      });
+      return [];
+    }
+
+    return data.map((item: IssueSimilaritySearchResult) => ({
+      id: item.id,
+      issue_id: item.id,
+      similarity: item.similarity,
+    }));
   }
 
   async createIssue(issueData: IssueData) {
