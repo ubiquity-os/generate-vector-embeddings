@@ -1,12 +1,11 @@
 import { Context } from "../types";
-import { IssuePayload } from "../types/payload";
 
-export async function deleteIssues(context: Context) {
+export async function deleteIssues(context: Context<"issues.deleted">) {
   const {
     logger,
     adapters: { supabase },
+    payload,
   } = context;
-  const { payload } = context as { payload: IssuePayload };
   const nodeId = payload.issue.node_id;
 
   try {

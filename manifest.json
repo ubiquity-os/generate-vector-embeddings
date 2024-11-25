@@ -27,10 +27,6 @@
         "type": "number"
       }
     },
-    "required": [
-      "matchThreshold",
-      "warningThreshold",
-      "jobMatchingThreshold"
-    ]
+    "required": ["matchThreshold", "warningThreshold", "jobMatchingThreshold"]
   }
 }

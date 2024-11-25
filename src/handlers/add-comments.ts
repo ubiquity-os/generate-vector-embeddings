@@ -1,12 +1,11 @@
 import { Context } from "../types";
-import { CommentPayload } from "../types/payload";
 
-export async function addComments(context: Context) {
+export async function addComments(context: Context<"issue_comment.created">) {
   const {
     logger,
     adapters: { supabase },
+    payload,
   } = context;
-  const { payload } = context as { payload: CommentPayload };
   const markdown = payload.comment.body;
   const authorId = payload.comment.user?.id || -1;
   const nodeId = payload.comment.node_id;

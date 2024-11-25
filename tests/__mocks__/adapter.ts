@@ -1,6 +1,7 @@
 import { Context } from "../../src/types";
 import { Comment } from "../../src/adapters/supabase/helpers/comment";
 import { STRINGS } from "./strings";
+import { jest } from "@jest/globals";
 
 export interface CommentMock {
   id: string;

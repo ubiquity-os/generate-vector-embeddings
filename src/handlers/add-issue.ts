@@ -1,13 +1,12 @@
 import { Context } from "../types";
-import { IssuePayload } from "../types/payload";
 import { removeFootnotes } from "./issue-deduplication";
 
-export async function addIssue(context: Context) {
+export async function addIssue(context: Context<"issues.opened">) {
   const {
     logger,
     adapters: { supabase },
+    payload,
   } = context;
-  const { payload } = context as { payload: IssuePayload };
   const markdown = payload.issue.body + " " + payload.issue.title || null;
   const authorId = payload.issue.user?.id || -1;
   const nodeId = payload.issue.node_id;
