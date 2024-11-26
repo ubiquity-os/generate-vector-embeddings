@@ -50,36 +50,41 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
   if (similarIssues && similarIssues.length > 0) {
     similarIssues.sort((a: IssueSimilaritySearchResult, b: IssueSimilaritySearchResult) => b.similarity - a.similarity); // Sort by similarity
     const fetchPromises = similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
-      const issueObject: IssueGraphqlResponse = await context.octokit.graphql(
-        `query ($issueNodeId: ID!) {
+      try {
+        const issueObject: IssueGraphqlResponse = await context.octokit.graphql(
+          `query ($issueNodeId: ID!) {
             node(id: $issueNodeId) {
-              ... on Issue {
-                title
-                url
-                state
-                repository{
-                  name
+            ... on Issue {
+              title
+              url
+              state
+              repository{
+                name
                   owner {
                     login
                   }
-                }
-                stateReason
-                closed
-                assignees(first: 10) {
-                  nodes {
-                    login
-                    url
-                  }
+              }
+              stateReason
+              closed
+              assignees(first: 10) {
+                nodes {
+                  login
+                  url
                 }
               }
             }
-          }`,
-        { issueNodeId: issue.issue_id }
-      );
-      issueObject.similarity = issue.similarity;
-      return issueObject;
+          }
+        }`,
+          { issueNodeId: issue.issue_id }
+        );
+        issueObject.similarity = issue.similarity;
+        return issueObject;
+      } catch (error) {
+        context.logger.error(`Failed to fetch issue ${issue.issue_id}: ${error}`, { issue });
+        return null;
+      }
     });
-    const issueList = await Promise.all(fetchPromises);
+    const issueList = (await Promise.all(fetchPromises)).filter((issue) => issue !== null);
     issueList.forEach((issue: IssueGraphqlResponse) => {
       if (issue.node.closed && issue.node.stateReason === "COMPLETED" && issue.node.assignees.nodes.length > 0) {
         const assignees = issue.node.assignees.nodes;

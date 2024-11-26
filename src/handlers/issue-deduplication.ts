@@ -220,32 +220,38 @@ async function handleMatchIssuesComment(
 
 // Process similar issues and return the list of similar issues with their similarity scores
 async function processSimilarIssues(similarIssues: IssueSimilaritySearchResult[], context: Context, issueBody: string): Promise<IssueGraphqlResponse[]> {
-  return await Promise.all(
+  const processedIssues = await Promise.all(
     similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
-      const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
-        `query($issueNodeId: ID!) {
-          node(id: $issueNodeId) {
-            ... on Issue {
-              title
-              url
-              number
-              body
-              repository {
-                name
-                owner {
-                  login
+      try {
+        const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
+          `query($issueNodeId: ID!) {
+            node(id: $issueNodeId) {
+              ... on Issue {
+                title
+                url
+                number
+                body
+                repository {
+                  name
+                  owner {
+                    login
+                  }
                 }
               }
             }
-          }
-        }`,
-        { issueNodeId: issue.issue_id }
-      );
-      issueUrl.similarity = Math.round(issue.similarity * 100).toString();
-      issueUrl.mostSimilarSentence = findMostSimilarSentence(issueBody, issueUrl.node.body, context);
-      return issueUrl;
+          }`,
+          { issueNodeId: issue.issue_id }
+        );
+        issueUrl.similarity = Math.round(issue.similarity * 100).toString();
+        issueUrl.mostSimilarSentence = findMostSimilarSentence(issueBody, issueUrl.node.body, context);
+        return issueUrl;
+      } catch (error) {
+        context.logger.error(`Failed to fetch issue ${issue.issue_id}: ${error}`, { issue });
+        return null;
+      }
     })
   );
+  return processedIssues.filter((issue): issue is IssueGraphqlResponse => issue !== null);
 }
 
 /**
