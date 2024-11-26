@@ -8,7 +8,7 @@ export async function addIssue(context: Context<"issues.opened">) {
     payload,
   } = context;
   const issue = payload.issue;
-  const markdown = payload.issue.body && payload.issue.title ? `${payload.issue.body} ${payload.issue.title}` : null;
+  const markdown = issue.body + " " + issue.title || null;
   const authorId = issue.user?.id || -1;
   const id = issue.node_id;
   const isPrivate = payload.repository.private;
