@@ -3,7 +3,7 @@ import type { ExecutionContext } from "hono";
 import { createAdapters } from "./adapters";
 import { SupportedEvents } from "./types/context";
 import { Env, envSchema } from "./types/env";
-import { PluginSettings, pluginSettingsSchema } from "./types/plugin-inputs";
+import { PluginSettings, pluginSettingsSchema } from "./types/plugin-input";
 import manifest from "../manifest.json";
 import { runPlugin } from "./plugin";
 import { Manifest } from "@ubiquity-os/plugin-sdk/manifest";

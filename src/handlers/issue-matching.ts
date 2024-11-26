@@ -1,4 +1,5 @@
 import { Context } from "../types";
+import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 
 export interface IssueGraphqlResponse {
   node: {
@@ -95,7 +96,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
       }
     });
     // Fetch if any previous comment exists
-    const listIssues = await octokit.rest.issues.listComments({
+    const listIssues: RestEndpointMethodTypes["issues"]["listComments"]["response"] = await octokit.rest.issues.listComments({
       owner: payload.repository.owner.login,
       repo: payload.repository.name,
       issue_number: issue.number,

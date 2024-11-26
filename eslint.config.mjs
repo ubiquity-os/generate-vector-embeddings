@@ -9,7 +9,7 @@ export default tsEslint.config({
     "@typescript-eslint": tsEslint.plugin,
     "check-file": checkFile,
   },
-  ignores: [".github/knip.ts", "src/types/database.ts", "src/adapters/utils/markdown-to-plaintext.ts"],
+  ignores: [".github/knip.ts", "src/types/database.ts", "src/adapters/utils/markdown-to-plaintext.ts", "dist/**", "coverage/**", "eslint.config.mjs"],
   extends: [eslint.configs.recommended, ...tsEslint.configs.recommended, sonarjs.configs.recommended],
   languageOptions: {
     parser: tsEslint.parser,
