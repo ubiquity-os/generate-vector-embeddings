@@ -30,7 +30,7 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       VOYAGEAI_API_KEY: ${{secrets.VOYAGEAI_API_KEY}}
-      PLUGIN_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       KERNEL_PUBLIC_KEY: ${{ secrets.KERNEL_PUBLIC_KEY }}
 
     steps:
@@ -41,15 +41,12 @@ jobs:
         with:
           node-version: "20.10.0"
 
-      - name: install dependencies
-        run: yarn
-
-      - name: execute directive
-        run: npx tsx ./src/main.ts
-        id: issue-comment-embeddings
+      - name: Execute plugin
+        run: node dist/index.js
         env:
+          PLUGIN_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           VOYAGEAI_API_KEY: ${{secrets.VOYAGEAI_API_KEY}}
-          PLUGIN_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           KERNEL_PUBLIC_KEY: ${{ secrets.KERNEL_PUBLIC_KEY }}
