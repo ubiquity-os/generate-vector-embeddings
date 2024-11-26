@@ -15,7 +15,7 @@ export async function addIssue(context: Context<"issues.opened">) {
 
   try {
     if (!markdown) {
-      logger.error("Issue body is empty");
+      logger.error("Issue body is empty", { issue });
       return;
     }
     const cleanedIssue = removeFootnotes(markdown);
