@@ -14,6 +14,7 @@ createActionsPlugin<PluginSettings, Env, null, SupportedEvents>(
     });
   },
   {
+    bypassSignatureVerification: true,
     logLevel: (process.env.LOG_LEVEL as LogLevel) ?? "info",
     settingsSchema: pluginSettingsSchema,
     envSchema: envSchema,
