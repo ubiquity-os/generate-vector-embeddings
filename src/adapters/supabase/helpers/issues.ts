@@ -163,12 +163,27 @@ export class Issue extends SuperSupabase {
   }
 
   async findSimilarIssues({ markdown, currentId, threshold }: FindSimilarIssuesParams): Promise<IssueSimilaritySearchResult[] | null> {
-    const { data, error } = await this.supabase.rpc("find_similar_issues", {
-      markdown,
-      current_id: currentId,
-      threshold,
-    });
-    if (error) {
+    // Create a new issue embedding
+    try {
+      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+      const { data, error } = await this.supabase.rpc("find_similar_issues", {
+        query_embedding: embedding,
+        current_id: currentId,
+        threshold,
+        top_k: 5,
+      });
+      if (error) {
+        this.context.logger.error("Error finding similar issues", {
+          Error: error,
+          markdown,
+          currentId,
+          threshold,
+          query_embedding: embedding,
+        });
+        return null;
+      }
+      return data;
+    } catch (error) {
       this.context.logger.error("Error finding similar issues", {
         Error: error,
         markdown,
@@ -177,6 +192,5 @@ export class Issue extends SuperSupabase {
       });
       return null;
     }
-    return data;
   }
 }
