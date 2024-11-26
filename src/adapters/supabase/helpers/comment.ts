@@ -93,7 +93,7 @@ export class Comment extends SuperSupabase {
         this.context.logger.error("Error updating comment", {
           Error: error,
           commentData: {
-            id: commentData.id,
+            commentData,
             markdown: finalMarkdown,
             plaintext,
             embedding,
@@ -105,7 +105,7 @@ export class Comment extends SuperSupabase {
       }
       this.context.logger.info("Comment updated successfully with id: " + commentData.id, {
         commentData: {
-          id: commentData.id,
+          commentData,
           markdown: finalMarkdown,
           plaintext,
           embedding,

@@ -127,7 +127,7 @@ export class Issue extends SuperSupabase {
         this.context.logger.error("Error updating issue", {
           Error: error,
           issueData: {
-            id: issueData.id,
+            ...issueData,
             markdown: finalMarkdown,
             plaintext,
             embedding,
@@ -139,7 +139,7 @@ export class Issue extends SuperSupabase {
       }
       this.context.logger.info("Issue updated successfully with id: " + issueData.id, {
         issueData: {
-          id: issueData.id,
+          ...issueData,
           markdown: finalMarkdown,
           plaintext,
           embedding,
@@ -164,49 +164,11 @@ export class Issue extends SuperSupabase {
     return data;
   }
 
-  async findSimilarIssues(markdown: string, threshold: number, currentId: string): Promise<IssueSimilaritySearchResult[]> {
-    try {
-      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown, "query");
-      const { data, error } = await this.supabase.rpc("find_similar_issues", {
-        current_id: currentId,
-        query_embedding: embedding,
-        threshold,
-        top_k: 5,
-      });
-      if (error) {
-        this.context.logger.error("Error finding similar issues", {
-          Error: error,
-          markdown,
-          threshold,
-          currentId,
-        });
-        return [];
-      }
-      return data;
-    } catch (error) {
-      this.context.logger.error("Error finding similar issues", {
-        Error: error,
-        markdown,
-        threshold,
-        currentId,
-      });
-      return [];
-    }
-  }
-
-  async updatePayload(issueNodeId: string, payload: Record<string, unknown>) {
-    const { error } = await this.supabase.from("issues").update({ payload }).eq("id", issueNodeId);
+  async deleteIssue(issueNodeId: string) {
+    const { error } = await this.supabase.from("issues").delete().eq("id", issueNodeId);
     if (error) {
-      this.context.logger.error("Error updating issue payload", { err: error });
+      this.context.logger.error("Error deleting issue", { err: error });
     }
-  }
-
-  async isIssuePresent(issueNodeId: string): Promise<boolean> {
-    const { data, error } = await this.supabase.from("issues").select("*").eq("id", issueNodeId);
-    if (error) {
-      this.context.logger.error("Error checking if issue is present", error);
-      return false;
-    }
-    return data && data.length > 0;
+    this.context.logger.info("Issue deleted successfully with id: " + issueNodeId);
   }
 }

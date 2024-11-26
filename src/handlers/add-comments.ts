@@ -22,7 +22,7 @@ export async function addComments(context: Context<"issue_comment.created">) {
       logger.error("Comment is on a pull request");
     }
     if ((await supabase.issue.getIssue(issueId)) === null) {
-      logger.info("Parent issue not found, creating new issue");
+      logger.info("Parent issue not found, creating new issue", { "Issue ID": issueId });
       await addIssue(context as unknown as Context<"issues.opened">);
     }
     await supabase.comment.createComment({ markdown, id, author_id: authorId, payload, isPrivate, issue_id: issueId });
