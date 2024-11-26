@@ -154,7 +154,7 @@ function createContextInner(
       jobMatchingThreshold: 0.75,
     },
     adapters: {} as Context["adapters"],
-    logger: new Logs("debug"),
+    logger: new Logs("debug") as unknown as Context["logger"],
     env: {} as Env,
     octokit: new Octokit(),
     command: null,
