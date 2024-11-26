@@ -9,9 +9,9 @@ import { StaticDecode, Type as T } from "@sinclair/typebox";
  */
 export const pluginSettingsSchema = T.Object(
   {
-    matchThreshold: T.Number({ default: 0.95 }),
-    warningThreshold: T.Number({ default: 0.75 }),
-    jobMatchingThreshold: T.Number({ default: 0.75 }),
+    matchThreshold: T.Number({ default: 0.95, description: "The minimum similarity score when considering existing issues to be duplicates." }),
+    warningThreshold: T.Number({ default: 0.75, description: "" }),
+    jobMatchingThreshold: T.Number({ default: 0.75, description: "The minimum similarity score when considering users to be suitable for a job." }),
   },
   { default: {} }
 );
