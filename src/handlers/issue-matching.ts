@@ -1,4 +1,5 @@
 import { Context } from "../types";
+import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 import { IssueSimilaritySearchResult } from "../adapters/supabase/helpers/issues";
 import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 
