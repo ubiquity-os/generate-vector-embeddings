@@ -69,8 +69,7 @@ export class Issue extends SuperSupabase {
 
     const { data, error } = await this.supabase
       .from("issues")
-      .insert([{ ...issueData, markdown: finalMarkdown, plaintext, payload: finalPayload, embedding: embedding }]);
-    
+      .insert([{ id: issueData.id, plaintext, embedding, payload: finalPayload, author_id: issueData.author_id, markdown: finalMarkdown }]);
     if (error) {
       this.context.logger.error("Failed to create issue in database", {
         Error: error,
