@@ -54,19 +54,17 @@ export class Comment extends SuperSupabase {
       finalPayload = null;
       plaintext = null;
     }
-    const { data, error } = await this.supabase
-      .from("issue_comments")
-      .insert([
-        {
-          id: commentData.id,
-          markdown: finalMarkdown,
-          author_id: commentData.author_id,
-          embedding,
-          payload: finalPayload,
-          issue_id: commentData.issue_id,
-          plaintext,
-        },
-      ]);
+    const { data, error } = await this.supabase.from("issue_comments").insert([
+      {
+        id: commentData.id,
+        markdown: finalMarkdown,
+        author_id: commentData.author_id,
+        embedding,
+        payload: finalPayload,
+        issue_id: commentData.issue_id,
+        plaintext,
+      },
+    ]);
     if (error) {
       this.context.logger.error("Failed to create comment in database", {
         Error: error,
