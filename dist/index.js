@@ -1,4 +1,4 @@
-require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
+/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 4914:
@@ -66139,7 +66139,7 @@ var errorHandler = (err, c) => {
   if ("getResponse" in err) {
     return err.getResponse();
   }
-  console.error(err);
+  console.error("WWWW",err);
   return c.text("Internal Server Error", 500);
 };
 var hono_base_Hono = class {
@@ -73818,7 +73818,7 @@ async function verifySignature(publicKeyPem, inputs, signature) {
     const dataArray = new TextEncoder().encode(JSON.stringify(inputsOrdered));
     return await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey, signatureArray, dataArray);
   } catch (error) {
-    console.error(error);
+    console.error("#####", error);
     return false;
   }
 }
@@ -73910,7 +73910,7 @@ function createPlugin(handler, manifest, options) {
       const result = await handler(context2);
       return ctx.json({ stateId: inputs.stateId, output: result ?? {} });
     } catch (error) {
-      console.error(error);
+      console.error("####", error);
       let loggerError;
       if (error instanceof Error) {
         loggerError = context2.logger.error(`Error: ${error}`, { error });
@@ -83646,7 +83646,7 @@ createActionsPlugin((context) => {
     ...(process.env.KERNEL_PUBLIC_KEY && { kernelPublicKey: process.env.KERNEL_PUBLIC_KEY }),
     postCommentOnError: true,
 }).catch((error) => {
-    console.error(error);
+    console.error("WQWQ", error);
     process.exit(1);
 });
 
@@ -83655,4 +83655,3 @@ createActionsPlugin((context) => {
 module.exports = __webpack_exports__;
 /******/ })()
 ;
-//# sourceMappingURL=index.js.map
