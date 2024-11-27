@@ -52,6 +52,7 @@
     "@mswjs/data": "0.16.1",
     "@types/jest": "^29.5.12",
     "@types/node": "20.14.5",
+    "@vercel/ncc": "0.38.3",
     "cross-env": "7.0.3",
     "cspell": "8.9.0",
     "eslint": "9.5.0",
