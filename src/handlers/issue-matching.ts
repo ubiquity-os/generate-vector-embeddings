@@ -52,29 +52,32 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     const fetchPromises = similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
       try {
         const issueObject: IssueGraphqlResponse = await context.octokit.graphql(
-          `query ($issueNodeId: ID!) {
-            node(id: $issueNodeId) {
-            ... on Issue {
-              title
-              url
-              state
-              repository{
-                name
-                  owner {
-                    login
-                  }
-              }
-              stateReason
-              closed
-              assignees(first: 10) {
-                nodes {
-                  login
+          /* GraphQL */
+          `
+            query ($issueNodeId: ID!) {
+              node(id: $issueNodeId) {
+                ... on Issue {
+                  title
                   url
+                  state
+                  repository {
+                    name
+                    owner {
+                      login
+                    }
+                  }
+                  stateReason
+                  closed
+                  assignees(first: 10) {
+                    nodes {
+                      login
+                      url
+                    }
+                  }
                 }
               }
             }
-          }
-        }`,
+          `,
           { issueNodeId: issue.issue_id }
         );
         issueObject.similarity = issue.similarity;
