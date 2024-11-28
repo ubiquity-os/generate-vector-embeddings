@@ -224,22 +224,25 @@ async function processSimilarIssues(similarIssues: IssueSimilaritySearchResult[]
     similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
       try {
         const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
-          `query($issueNodeId: ID!) {
-            node(id: $issueNodeId) {
-              ... on Issue {
-                title
-                url
-                number
-                body
-                repository {
-                  name
-                  owner {
-                    login
+          /* GraphQL */
+          `
+            query ($issueNodeId: ID!) {
+              node(id: $issueNodeId) {
+                ... on Issue {
+                  title
+                  url
+                  number
+                  body
+                  repository {
+                    name
+                    owner {
+                      login
+                    }
                   }
                 }
               }
             }
-          }`,
+          `,
           { issueNodeId: issue.issue_id }
         );
         issueUrl.similarity = Math.round(issue.similarity * 100).toString();
