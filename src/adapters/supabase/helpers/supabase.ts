@@ -9,4 +9,15 @@ export class SuperSupabase {
     this.supabase = supabase;
     this.context = context;
   }
+
+  async checkConnection(): Promise<boolean> {
+    const { error } = await this.supabase.from("issues").select("*").limit(1);
+    // If there's no error, the connection is working
+    if (!error) {
+      return true;
+    } else {
+      this.context.logger.error("Error connecting to Supabase or Schema has not been migrated/created");
+      return false;
+    }
+  }
 }

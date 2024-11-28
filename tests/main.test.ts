@@ -37,7 +37,14 @@ describe("Plugin tests", () => {
     const supabase = context.adapters.supabase;
     const commentObject = null;
     try {
-      await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasCreate", 1, commentObject, false, "sasasCreateIssue");
+      await supabase.comment.createComment({
+        markdown: STRINGS.HELLO_WORLD,
+        id: "sasasCreate",
+        author_id: 1,
+        payload: commentObject,
+        isPrivate: false,
+        issue_id: "sasasCreateIssue",
+      });
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
@@ -54,7 +61,14 @@ describe("Plugin tests", () => {
     const { context } = createContext("Updated Message", 1, 1, 1, 1, "sasasUpdate", "issue_comment.edited");
     const supabase = context.adapters.supabase;
     const commentObject = null;
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasUpdate", 1, commentObject, false, "sasasUpdateIssue");
+    await supabase.comment.createComment({
+      markdown: STRINGS.HELLO_WORLD,
+      id: "sasasUpdate",
+      author_id: 1,
+      payload: commentObject,
+      isPrivate: false,
+      issue_id: "sasasUpdateIssue",
+    });
     await runPlugin(context);
     const comment = (await supabase.comment.getComment("sasasUpdate")) as unknown as CommentMock;
     expect(comment).toBeDefined();
@@ -66,7 +80,14 @@ describe("Plugin tests", () => {
     const { context } = createContext("Text Message", 1, 1, 1, 1, "sasasDelete", "issue_comment.deleted");
     const supabase = context.adapters.supabase;
     const commentObject = null;
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasDelete", 1, commentObject, false, "sasasDeleteIssue");
+    await supabase.comment.createComment({
+      markdown: STRINGS.HELLO_WORLD,
+      id: "sasasDelete",
+      author_id: 1,
+      payload: commentObject,
+      isPrivate: false,
+      issue_id: "sasasDeleteIssue",
+    });
     await runPlugin(context);
     try {
       await supabase.comment.getComment("sasasDelete");

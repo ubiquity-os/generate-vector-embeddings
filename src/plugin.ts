@@ -20,12 +20,15 @@ import { issueTransfer } from "./handlers/transfer-issue";
 export async function runPlugin(context: Context) {
   const { logger, eventName, env } = context;
 
-  if (!context.adapters) {
+  if (!context.adapters?.supabase && !context.adapters?.voyage) {
     const supabase = createClient<Database>(env.SUPABASE_URL, env.SUPABASE_KEY);
     const voyageClient = new VoyageAIClient({
       apiKey: env.VOYAGEAI_API_KEY,
     });
     context.adapters = createAdapters(supabase, voyageClient, context);
+    //Check the supabase adapter
+    const isConnectionValid = await context.adapters.supabase.super.checkConnection();
+    context.logger[isConnectionValid ? "ok" : "error"](`Supabase connection ${isConnectionValid ? "successful" : "failed"}`);
   }
 
   if (isIssueCommentEvent(context)) {

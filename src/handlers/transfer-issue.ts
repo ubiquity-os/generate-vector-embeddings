@@ -10,7 +10,7 @@ export async function issueTransfer(context: Context<"issues.transferred">) {
   const { new_issue, new_repository } = changes;
   //Fetch the new details of the issue
   const newIssueNodeId = new_issue.node_id;
-  const markdown = new_issue.body + " " + new_issue.title || null;
+  const markdown = new_issue.body && new_issue.title ? new_issue.body + " " + new_issue.title : null;
   const authorId = new_issue.user?.id || -1;
   const isPrivate = new_repository.private;
 
@@ -18,14 +18,16 @@ export async function issueTransfer(context: Context<"issues.transferred">) {
   //Create the new issue in the new repository
   try {
     await supabase.issue.deleteIssue(nodeId);
-    await supabase.issue.createIssue(newIssueNodeId, new_issue, isPrivate, markdown, authorId);
+    await supabase.issue.createIssue({ id: newIssueNodeId, payload: new_issue, isPrivate, markdown, author_id: authorId });
+    logger.ok(`Successfully transferred issue!`, new_issue);
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(`Error transferring issue:`, { error: error, stack: error.stack });
+      logger.error(`Error transferring issue:`, { error: error, stack: error.stack, issue: new_issue });
       throw error;
     } else {
-      logger.error(`Error transferring issue:`, { err: error, error: new Error() });
+      logger.error(`Error transferring issue:`, { err: error, error: new Error(), issue: new_issue });
       throw error;
     }
   }
+  logger.debug(`Exiting issueTransfer`);
 }
