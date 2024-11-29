@@ -1,54 +1,26 @@
-import * as core from "@actions/core";
-import * as github from "@actions/github";
-import { Octokit } from "@octokit/rest";
-import { Value } from "@sinclair/typebox/value";
-import { envSchema, pluginSettingsSchema, PluginInputs, pluginSettingsValidator } from "./types";
-import { plugin } from "./plugin";
+import { createActionsPlugin } from "@ubiquity-os/plugin-sdk";
+import { LogLevel } from "@ubiquity-os/ubiquity-os-logger";
+import { runPlugin } from "./plugin";
+import { Env, envSchema } from "./types/env";
+import { PluginSettings, pluginSettingsSchema } from "./types/plugin-input";
+import { SupportedEvents } from "./types";
+import { createAdapters } from "./adapters";
 
-/**
- * How a GitHub action executes the plugin.
- */
-export async function run() {
-  const payload = github.context.payload.inputs;
-  const env = Value.Decode(envSchema, process.env);
-  const settings = Value.Decode(pluginSettingsSchema, Value.Default(pluginSettingsSchema, JSON.parse(payload.settings)));
-
-  if (!pluginSettingsValidator.test(settings)) {
-    throw new Error("Invalid settings provided");
+createActionsPlugin<PluginSettings, Env, null, SupportedEvents>(
+  (context) => {
+    return runPlugin({
+      ...context,
+      adapters: {} as ReturnType<typeof createAdapters>,
+    });
+  },
+  {
+    logLevel: (process.env.LOG_LEVEL as LogLevel) ?? "info",
+    settingsSchema: pluginSettingsSchema,
+    envSchema: envSchema,
+    ...(process.env.KERNEL_PUBLIC_KEY && { kernelPublicKey: process.env.KERNEL_PUBLIC_KEY }),
+    postCommentOnError: true,
   }
-
-  const inputs: PluginInputs = {
-    stateId: payload.stateId,
-    eventName: payload.eventName,
-    eventPayload: JSON.parse(payload.eventPayload),
-    settings,
-    authToken: payload.authToken,
-    ref: payload.ref,
-  };
-
-  await plugin(inputs, env);
-
-  return returnDataToKernel(process.env.GITHUB_TOKEN, inputs.stateId, {});
-}
-
-async function returnDataToKernel(repoToken: string, stateId: string, output: object) {
-  const octokit = new Octokit({ auth: repoToken });
-  await octokit.repos.createDispatchEvent({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
-    event_type: "return-data-to-ubiquity-os-kernel",
-    client_payload: {
-      state_id: stateId,
-      output: JSON.stringify(output),
-    },
-  });
-}
-
-run()
-  .then((result) => {
-    core.setOutput("result", result);
-  })
-  .catch((error) => {
-    console.error(error);
-    core.setFailed(error);
-  });
+).catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

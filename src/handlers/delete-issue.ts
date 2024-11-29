@@ -1,26 +1,24 @@
 import { Context } from "../types";
-import { IssuePayload } from "../types/payload";
 
-export async function deleteIssues(context: Context) {
+export async function deleteIssues(context: Context<"issues.deleted">) {
   const {
     logger,
     adapters: { supabase },
+    payload,
   } = context;
-  const { payload } = context as { payload: IssuePayload };
   const nodeId = payload.issue.node_id;
 
   try {
     await supabase.issue.deleteIssue(nodeId);
+    logger.ok(`Successfully deleted issue! ${payload.issue.id}`, payload.issue);
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(`Error deleting issue:`, { error: error, stack: error.stack });
+      logger.error(`Error deleting issue:`, { error: error, stack: error.stack, issue: payload.issue });
       throw error;
     } else {
-      logger.error(`Error deleting issue:`, { err: error, error: new Error() });
+      logger.error(`Error deleting issue:`, { err: error, issue: payload.issue });
       throw error;
     }
   }
-
-  logger.ok(`Successfully deleted issue!`);
   logger.debug(`Exiting deleteIssue`);
 }

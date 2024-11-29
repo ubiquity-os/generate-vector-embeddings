@@ -1,6 +1,5 @@
 import { IssueSimilaritySearchResult } from "../adapters/supabase/helpers/issues";
 import { Context } from "../types";
-import { IssuePayload } from "../types/payload";
 
 export interface IssueGraphqlResponse {
   node: {
@@ -25,30 +24,37 @@ export interface IssueGraphqlResponse {
  * @param context The context object
  * @returns True if a similar issue is found, false otherwise
  **/
-export async function issueChecker(context: Context): Promise<boolean> {
+export async function issueChecker(context: Context<"issues.opened" | "issues.edited">): Promise<boolean> {
   const {
     logger,
     adapters: { supabase },
     octokit,
+    payload,
   } = context;
-  const { payload } = context as { payload: IssuePayload };
   const issue = payload.issue;
   let issueBody = issue.body;
   if (!issueBody) {
-    logger.info("Issue body is empty");
+    logger.info("Issue body is empty", { issue });
     return false;
   }
   issueBody = removeFootnotes(issueBody);
-  const similarIssues = await supabase.issue.findSimilarIssues(issue.title + removeFootnotes(issueBody), 0.7, issue.node_id);
+  const similarIssues = await supabase.issue.findSimilarIssues({
+    markdown: issue.title + removeFootnotes(issueBody),
+    currentId: issue.node_id,
+    threshold: context.config.warningThreshold,
+  });
   if (similarIssues && similarIssues.length > 0) {
-    const matchIssues = similarIssues.filter((issue) => issue.similarity >= context.config.matchThreshold);
-    const processedIssues = await processSimilarIssues(similarIssues, context, issueBody);
+    let processedIssues = await processSimilarIssues(similarIssues, context, issueBody);
+    processedIssues = processedIssues.filter((issue) =>
+      matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
+    );
+    const matchIssues = processedIssues.filter((issue) => parseFloat(issue.similarity) >= context.config.matchThreshold);
     if (matchIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`);
       //To the issue body, add a footnote with the link to the similar issue
       const updatedBody = await handleMatchIssuesComment(context, payload, issueBody, processedIssues);
       issueBody = updatedBody || issueBody;
-      await octokit.issues.update({
+      await octokit.rest.issues.update({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         issue_number: issue.number,
@@ -58,7 +64,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
       });
       return true;
     }
-    if (similarIssues.length > 0) {
+    if (processedIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
       await handleSimilarIssuesComment(context, payload, issueBody, issue.number, processedIssues);
       return true;
@@ -67,7 +73,7 @@ export async function issueChecker(context: Context): Promise<boolean> {
     //Use the IssueBody (Without footnotes) to update the issue when no similar issues are found
     //Only if the issue has "possible duplicate" footnotes, update the issue
     if (checkIfDuplicateFootNoteExists(issue.body || "")) {
-      await octokit.issues.update({
+      await octokit.rest.issues.update({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         issue_number: issue.number,
@@ -89,7 +95,7 @@ function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg:
  * @param similarIssueContent The content of the similar issue
  * @returns The most similar sentence and its similarity score
  */
-function findMostSimilarSentence(issueContent: string, similarIssueContent: string): { sentence: string; similarity: number; index: number } {
+function findMostSimilarSentence(issueContent: string, similarIssueContent: string, context: Context): { sentence: string; similarity: number; index: number } {
   // Regex to match sentences while preserving URLs
   const sentenceRegex = /([^.!?\s][^.!?]*(?:[.!?](?!['"]?\s|$)[^.!?]*)*[.!?]?['"]?(?=\s|$))/g;
   // Function to split text into sentences while preserving URLs
@@ -125,12 +131,18 @@ function findMostSimilarSentence(issueContent: string, similarIssueContent: stri
   });
 
   if (!mostSimilarSentence) {
-    throw new Error("No similar sentence found");
+    context.logger.error("No similar sentence found");
   }
   return { sentence: mostSimilarSentence, similarity: maxSimilarity, index: mostSimilarIndex };
 }
 
-async function handleSimilarIssuesComment(context: Context, payload: IssuePayload, issueBody: string, issueNumber: number, issueList: IssueGraphqlResponse[]) {
+async function handleSimilarIssuesComment(
+  context: Context,
+  payload: Context<"issues.opened" | "issues.edited">["payload"],
+  issueBody: string,
+  issueNumber: number,
+  issueList: IssueGraphqlResponse[]
+) {
   const relevantIssues = issueList.filter((issue) =>
     matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
   );
@@ -170,7 +182,7 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
     updatedBody += "\n\n" + footnotes.join("");
   }
   // Update the issue with the modified body
-  await context.octokit.issues.update({
+  await context.octokit.rest.issues.update({
     owner: payload.repository.owner.login,
     repo: payload.repository.name,
     issue_number: issueNumber,
@@ -181,18 +193,10 @@ async function handleSimilarIssuesComment(context: Context, payload: IssuePayloa
 //When similarity is greater than match threshold, Add Caution mentioning the issues to which its is very much similar
 async function handleMatchIssuesComment(
   context: Context,
-  payload: IssuePayload,
+  payload: Context<"issues.opened" | "issues.edited">["payload"],
   issueBody: string,
-  issueList: IssueGraphqlResponse[]
+  relevantIssues: IssueGraphqlResponse[]
 ): Promise<string | undefined> {
-  const relevantIssues = issueList.filter((issue) =>
-    matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
-  );
-
-  if (relevantIssues.length === 0) {
-    context.logger.info("No relevant issues found with the same repository and organization");
-  }
-
   if (!issueBody) {
     return;
   }
@@ -216,32 +220,41 @@ async function handleMatchIssuesComment(
 
 // Process similar issues and return the list of similar issues with their similarity scores
 async function processSimilarIssues(similarIssues: IssueSimilaritySearchResult[], context: Context, issueBody: string): Promise<IssueGraphqlResponse[]> {
-  return await Promise.all(
+  const processedIssues = await Promise.all(
     similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
-      const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
-        `query($issueNodeId: ID!) {
-          node(id: $issueNodeId) {
-            ... on Issue {
-              title
-              url
-              number
-              body
-              repository {
-                name
-                owner {
-                  login
+      try {
+        const issueUrl: IssueGraphqlResponse = await context.octokit.graphql(
+          /* GraphQL */
+          `
+            query ($issueNodeId: ID!) {
+              node(id: $issueNodeId) {
+                ... on Issue {
+                  title
+                  url
+                  number
+                  body
+                  repository {
+                    name
+                    owner {
+                      login
+                    }
+                  }
                 }
               }
             }
-          }
-        }`,
-        { issueNodeId: issue.issue_id }
-      );
-      issueUrl.similarity = Math.round(issue.similarity * 100).toString();
-      issueUrl.mostSimilarSentence = findMostSimilarSentence(issueBody, issueUrl.node.body);
-      return issueUrl;
+          `,
+          { issueNodeId: issue.issue_id }
+        );
+        issueUrl.similarity = Math.round(issue.similarity * 100).toString();
+        issueUrl.mostSimilarSentence = findMostSimilarSentence(issueBody, issueUrl.node.body, context);
+        return issueUrl;
+      } catch (error) {
+        context.logger.error(`Failed to fetch issue ${issue.issue_id}: ${error}`, { issue });
+        return null;
+      }
     })
   );
+  return processedIssues.filter((issue): issue is IssueGraphqlResponse => issue !== null);
 }
 
 /**
@@ -292,10 +305,21 @@ export function removeFootnotes(content: string): string {
       contentWithoutFootnotes = contentWithoutFootnotes.replace(new RegExp(`\\[\\^${footnoteNumber}\\^\\]`, "g"), "");
     });
   }
+  contentWithoutFootnotes = removeCautionMessages(contentWithoutFootnotes);
   return contentWithoutFootnotes;
 }
 
-function checkIfDuplicateFootNoteExists(content: string): boolean {
+export function removeCautionMessages(content: string): string {
+  const cautionRegex = />[!CAUTION]\n> This issue may be a duplicate of the following issues:\n((> - \[[^\]]+\]\([^)]+\)\n)+)/g;
+  return content.replace(cautionRegex, "");
+}
+
+/**
+ * Checks if a duplicate footnote exists in the content.
+ * @param content The content to check for duplicate footnotes
+ * @returns True if a duplicate footnote exists, false otherwise
+ */
+export function checkIfDuplicateFootNoteExists(content: string): boolean {
   const footnoteDefRegex = /\[\^(\d+)\^\]: ⚠ \d+% possible duplicate - [^\n]+(\n|$)/g;
   const footnotes = content.match(footnoteDefRegex);
   return !!footnotes;

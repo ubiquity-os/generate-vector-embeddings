@@ -1,33 +1,38 @@
 import { Context } from "../types";
-import { CommentPayload } from "../types/payload";
+import { addIssue } from "./add-issue";
 
-export async function addComments(context: Context) {
+export async function addComments(context: Context<"issue_comment.created">) {
   const {
     logger,
     adapters: { supabase },
+    payload,
   } = context;
-  const { payload } = context as { payload: CommentPayload };
-  const markdown = payload.comment.body;
-  const authorId = payload.comment.user?.id || -1;
-  const nodeId = payload.comment.node_id;
+  const comment = payload.comment;
+  const markdown = comment.body;
+  const authorId = comment.user?.id || -1;
+  const id = comment.node_id;
   const isPrivate = payload.repository.private;
   const issueId = payload.issue.node_id;
 
   try {
     if (!markdown) {
-      throw new Error("Comment body is empty");
+      logger.error("Comment body is empty");
     }
-    await supabase.comment.createComment(markdown, nodeId, authorId, payload, isPrivate, issueId);
+    if (context.payload.issue.pull_request) {
+      logger.error("Comment is on a pull request");
+    }
+    if ((await supabase.issue.getIssue(issueId)) === null) {
+      logger.info("Parent issue not found, creating new issue", { "Issue ID": issueId });
+      await addIssue(context as unknown as Context<"issues.opened">);
+    }
+    await supabase.comment.createComment({ markdown, id, author_id: authorId, payload, isPrivate, issue_id: issueId });
+    logger.ok(`Successfully created comment!`, comment);
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(`Error creating comment:`, { error: error, stack: error.stack });
-      throw error;
+      logger.error(`Error creating comment:`, { error: error, stack: error.stack, comment: comment });
     } else {
-      logger.error(`Error creating comment:`, { err: error, error: new Error() });
-      throw error;
+      logger.error(`Error creating comment:`, { err: error, comment: comment });
     }
   }
-
-  logger.ok(`Successfully created comment!`);
   logger.debug(`Exiting addComments`);
 }

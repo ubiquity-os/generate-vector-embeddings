@@ -1,23 +1,20 @@
 // cSpell:disable
 
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { drop } from "@mswjs/data";
-import { Octokit } from "@octokit/rest";
 import { Logs } from "@ubiquity-os/ubiquity-os-logger";
 import dotenv from "dotenv";
 import { runPlugin } from "../src/plugin";
 import { Env } from "../src/types";
-import { Context, SupportedEvents } from "../src/types/context";
+import { Context } from "../src/types/context";
 import { CommentMock, createMockAdapters } from "./__mocks__/adapter";
 import { db } from "./__mocks__/db";
 import { createComment, setupTests } from "./__mocks__/helpers";
 import { server } from "./__mocks__/node";
 import { STRINGS } from "./__mocks__/strings";
+import { customOctokit as Octokit } from "@ubiquity-os/plugin-sdk/octokit";
 
 dotenv.config();
-jest.requireActual("@octokit/rest");
-jest.requireActual("@supabase/supabase-js");
-const octokit = new Octokit();
 
 beforeAll(() => {
   server.listen();
@@ -40,7 +37,14 @@ describe("Plugin tests", () => {
     const supabase = context.adapters.supabase;
     const commentObject = null;
     try {
-      await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasCreate", 1, commentObject, false, "sasasCreateIssue");
+      await supabase.comment.createComment({
+        markdown: STRINGS.HELLO_WORLD,
+        id: "sasasCreate",
+        author_id: 1,
+        payload: commentObject,
+        isPrivate: false,
+        issue_id: "sasasCreateIssue",
+      });
       throw new Error("Expected method to reject.");
     } catch (error) {
       if (error instanceof Error) {
@@ -57,7 +61,14 @@ describe("Plugin tests", () => {
     const { context } = createContext("Updated Message", 1, 1, 1, 1, "sasasUpdate", "issue_comment.edited");
     const supabase = context.adapters.supabase;
     const commentObject = null;
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasUpdate", 1, commentObject, false, "sasasUpdateIssue");
+    await supabase.comment.createComment({
+      markdown: STRINGS.HELLO_WORLD,
+      id: "sasasUpdate",
+      author_id: 1,
+      payload: commentObject,
+      isPrivate: false,
+      issue_id: "sasasUpdateIssue",
+    });
     await runPlugin(context);
     const comment = (await supabase.comment.getComment("sasasUpdate")) as unknown as CommentMock;
     expect(comment).toBeDefined();
@@ -69,7 +80,14 @@ describe("Plugin tests", () => {
     const { context } = createContext("Text Message", 1, 1, 1, 1, "sasasDelete", "issue_comment.deleted");
     const supabase = context.adapters.supabase;
     const commentObject = null;
-    await supabase.comment.createComment(STRINGS.HELLO_WORLD, "sasasDelete", 1, commentObject, false, "sasasDeleteIssue");
+    await supabase.comment.createComment({
+      markdown: STRINGS.HELLO_WORLD,
+      id: "sasasDelete",
+      author_id: 1,
+      payload: commentObject,
+      isPrivate: false,
+      issue_id: "sasasDeleteIssue",
+    });
     await runPlugin(context);
     try {
       await supabase.comment.getComment("sasasDelete");
@@ -106,7 +124,7 @@ function createContext(
   createComment(commentBody, commentId, nodeId); // create it first then pull it from the DB and feed it to _createContext
   const comment = db.issueComments.findFirst({
     where: { id: { equals: commentId } },
-  }) as unknown as unknown as SupportedEvents["issue_comment.created"]["payload"]["comment"];
+  }) as unknown as unknown as Context<"issue_comment.created">["payload"]["comment"];
 
   const context = createContextInner(repo, sender, issue1, comment, eventName);
   context.adapters = createMockAdapters(context) as unknown as Context["adapters"];
@@ -137,7 +155,7 @@ function createContextInner(
   repo: Context["payload"]["repository"],
   sender: Context["payload"]["sender"],
   issue: Context["payload"]["issue"],
-  comment: SupportedEvents["issue_comment.created"]["payload"]["comment"],
+  comment: Context<"issue_comment.created">["payload"]["comment"],
   eventName: Context["eventName"] = "issue_comment.created"
 ): Context {
   return {
@@ -157,8 +175,9 @@ function createContextInner(
       jobMatchingThreshold: 0.75,
     },
     adapters: {} as Context["adapters"],
-    logger: new Logs("debug"),
+    logger: new Logs("debug") as unknown as Context["logger"],
     env: {} as Env,
-    octokit: octokit,
+    octokit: new Octokit(),
+    command: null,
   };
 }
