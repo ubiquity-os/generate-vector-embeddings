@@ -16,7 +16,8 @@ export type SupportedEvents =
   | "issues.edited"
   | "issues.deleted"
   | "issues.labeled"
-  | "issues.transferred";
+  | "issues.transferred"
+  | "issues.closed";
 
 export type Context<TEvents extends SupportedEvents = SupportedEvents> = PluginContext<PluginSettings, Env, null, TEvents> & {
   adapters: ReturnType<typeof createAdapters>;
