@@ -97,6 +97,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     });
     const issueList = (await Promise.all(fetchPromises)).filter((issue) => issue !== null);
     issueList.forEach((issue: IssueGraphqlResponse) => {
+      // Only use completed issues that have assignees
       if (issue.node.closed && issue.node.stateReason === "COMPLETED" && issue.node.assignees.nodes.length > 0) {
         const assignees = issue.node.assignees.nodes;
         assignees.forEach((assignee: { login: string; url: string }) => {
@@ -149,8 +150,8 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
       }))
       .sort((a, b) => b.maxSimilarity - a.maxSimilarity);
 
-    // Take top 3 contributors by default, or more if alwaysRecommend is higher
-    const numToShow = Math.max(3, context.config.alwaysRecommend || 0);
+    // Use alwaysRecommend if specified, otherwise default to 3
+    const numToShow = context.config.alwaysRecommend || 3;
     const limitedContributors = new Map(sortedContributors.slice(0, numToShow).map(({ login, matches }) => [login, matches]));
 
     const comment = commentBuilder(limitedContributors);
