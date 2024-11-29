@@ -1,5 +1,5 @@
 {
-  "name": "Generate vector embeddings",
+  "name": "Text Vector Embeddings",
   "description": "Enables the storage, updating, and deletion of issue comment embeddings.",
   "ubiquity:listeners": [
     "issue_comment.created",
