@@ -24,7 +24,7 @@ export interface IssueGraphqlResponse {
  * @param context The context object
  * @returns True if a similar issue is found, false otherwise
  **/
-export async function issueChecker(context: Context<"issues.opened" | "issues.edited">): Promise<boolean> {
+export async function issueChecker(context: Context<"issues.opened" | "issues.edited">) {
   const {
     logger,
     adapters: { supabase },
