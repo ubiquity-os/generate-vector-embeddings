@@ -44,10 +44,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
   const matchResultArray: Map<string, Array<string>> = new Map();
 
   // If alwaysRecommend is enabled, use a lower threshold to ensure we get enough recommendations
-  const threshold =
-    context.config.alwaysRecommend && context.config.alwaysRecommend > 0
-      ? Math.min(context.config.jobMatchingThreshold, 0.5) // Use lower threshold when forcing recommendations
-      : context.config.jobMatchingThreshold;
+  const threshold = context.config.alwaysRecommend && context.config.alwaysRecommend > 0 ? 0 : context.config.jobMatchingThreshold;
 
   const similarIssues = await supabase.issue.findSimilarIssues({
     markdown: issueContent,
@@ -127,8 +124,15 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     //Check if the comment already exists
     const existingComment = listIssues.data.find((comment) => comment.body && comment.body.includes(">[!NOTE]" + "\n" + commentStart));
 
-    // Handle empty matchResultArray based on alwaysRecommend setting
-    if (matchResultArray.size === 0 && (!context.config.alwaysRecommend || context.config.alwaysRecommend === 0)) {
+    // Check if we should create/update a comment based on similarity and alwaysRecommend
+    const hasHighSimilarityMatch = Array.from(matchResultArray.values()).some((matches) =>
+      matches.some((match) => {
+        const similarity = parseInt(match.match(/`(\d+)% Match`/)?.[1] || "0") / 100;
+        return similarity >= context.config.jobMatchingThreshold;
+      })
+    );
+
+    if (matchResultArray.size === 0 || (!context.config.alwaysRecommend && !hasHighSimilarityMatch)) {
       if (existingComment) {
         // If the comment already exists, delete it
         await octokit.rest.issues.deleteComment({
@@ -137,7 +141,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
           comment_id: existingComment.id,
         });
       }
-      logger.debug("No similar issues found");
+      logger.debug("No suitable contributors found");
       return;
     }
 
@@ -150,8 +154,8 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
       }))
       .sort((a, b) => b.maxSimilarity - a.maxSimilarity);
 
-    // Use alwaysRecommend if specified, otherwise default to 3
-    const numToShow = context.config.alwaysRecommend || 3;
+    // Use alwaysRecommend if specified
+    const numToShow = context.config.alwaysRecommend;
     const limitedContributors = new Map(sortedContributors.slice(0, numToShow).map(({ login, matches }) => [login, matches]));
 
     const comment = commentBuilder(limitedContributors);
