@@ -1,7 +1,7 @@
 /**
  * Strings repeated more than twice are stored here.
  */
-export const STRINGS = {
+export const STRINGS: Record<string, string> = {
   HELLO_WORLD: "Hello, world!",
   TEST_REPO: "test-repo",
   SUCCESSFULLY_CREATED_COMMENT: "Successfully created comment!",
@@ -17,4 +17,8 @@ export const STRINGS = {
   COMMENT_DOES_NOT_EXIST: "Comment does not exist",
   SIMILAR_ISSUE: "Similar Issue",
   SIMILAR_ISSUE_URL: "https://www.github.com/org/repo/issues",
+  ISSUE_URL: "https://github.com/ubiquity/test-repo/issues/3#3",
+  SIMILAR_ISSUE_TITLE: "Description: The Java service layer's performance deteriorates under high load, partly due to the absence of effective caching.",
+  ISSUE_URL_TEMPLATE: "https://github.com/ubiquity/test-repo/issues/1",
+  CONTRIBUTOR_SUGGESTION_TEXT: "The following contributors may be suitable for this task:",
 };
