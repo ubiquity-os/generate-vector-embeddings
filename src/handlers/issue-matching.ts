@@ -124,15 +124,9 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     //Check if the comment already exists
     const existingComment = listIssues.data.find((comment) => comment.body && comment.body.includes(">[!NOTE]" + "\n" + commentStart));
 
-    // Check if we should create/update a comment based on similarity and alwaysRecommend
-    const hasHighSimilarityMatch = Array.from(matchResultArray.values()).some((matches) =>
-      matches.some((match) => {
-        const similarity = parseInt(match.match(/`(\d+)% Match`/)?.[1] || "0") / 100;
-        return similarity >= context.config.jobMatchingThreshold;
-      })
-    );
+    logger.debug("Matched issues", { matchResultArray });
 
-    if (matchResultArray.size === 0 || (!context.config.alwaysRecommend && !hasHighSimilarityMatch)) {
+    if (matchResultArray.size === 0 || (!context.config.alwaysRecommend && !issueList)) {
       if (existingComment) {
         // If the comment already exists, delete it
         await octokit.rest.issues.deleteComment({
@@ -154,11 +148,16 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
       }))
       .sort((a, b) => b.maxSimilarity - a.maxSimilarity);
 
+    logger.debug("Sorted contributors", { sortedContributors });
+
     // Use alwaysRecommend if specified
     const numToShow = context.config.alwaysRecommend;
     const limitedContributors = new Map(sortedContributors.slice(0, numToShow).map(({ login, matches }) => [login, matches]));
 
     const comment = commentBuilder(limitedContributors);
+
+    logger.debug("Comment to be added", { comment });
+
     if (existingComment) {
       await context.octokit.rest.issues.updateComment({
         owner: payload.repository.owner.login,
