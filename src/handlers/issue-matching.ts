@@ -176,7 +176,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     }
   }
 
-  logger.ok(`Exiting issueMatching handler!`, { similarIssues: similarIssues || "No similar issues found" });
+  logger.info(`Exiting issueMatching handler!`, { similarIssues: similarIssues || "No similar issues found" });
 }
 
 /**

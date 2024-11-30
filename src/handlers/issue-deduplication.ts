@@ -49,7 +49,7 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
     );
     const matchIssues = processedIssues.filter((issue) => parseFloat(issue.similarity) >= context.config.matchThreshold);
     if (matchIssues.length > 0) {
-      logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`);
+      logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`, { matchIssues });
       //To the issue body, add a footnote with the link to the similar issue
       const updatedBody = await handleMatchIssuesComment(context, payload, issueBody, processedIssues);
       issueBody = updatedBody || issueBody;
@@ -64,7 +64,7 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
       return;
     }
     if (processedIssues.length > 0) {
-      logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
+      logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`, { processedIssues });
       await handleSimilarIssuesComment(context, payload, issueBody, issue.number, processedIssues);
       return;
     }
