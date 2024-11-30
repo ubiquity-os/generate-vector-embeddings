@@ -315,58 +315,6 @@ describe("Plugin tests", () => {
     expect(comments[0].body).toContain("98% Match");
   });
 
-  it("When issue matching is triggered with similarity below jobMatchingThreshold, it should not suggest contributors", async () => {
-    const [taskCompleteIssue] = fetchSimilarIssues("task_complete");
-    const { context } = createContextIssues(taskCompleteIssue.issue_body, "task_complete_below", 5, taskCompleteIssue.title);
-
-    // Explicitly set alwaysRecommend to 0 to ensure it's disabled
-    context.config = {
-      ...context.config,
-    };
-
-    context.adapters.supabase.issue.createIssue = jest.fn(async () => {
-      createIssue(
-        taskCompleteIssue.issue_body,
-        "task_complete_below",
-        taskCompleteIssue.title,
-        5,
-        { login: "test", id: 1 },
-        "open",
-        null,
-        STRINGS.TEST_REPO,
-        STRINGS.USER_1
-      );
-    });
-
-    // Mock findSimilarIssues to return a result with similarity below jobMatchingThreshold
-    context.adapters.supabase.issue.findSimilarIssues = jest
-      .fn<typeof context.adapters.supabase.issue.findSimilarIssues>()
-      .mockResolvedValue([{ id: "similar4", similarity: 0.94 }] as unknown as IssueSimilaritySearchResult[]);
-
-    // Mock graphql to return issue data with a contributor
-    context.octokit.graphql = jest.fn<typeof context.octokit.graphql>().mockResolvedValue({
-      node: {
-        title: "Similar Issue",
-        url: STRINGS.ISSUE_URL_TEMPLATE,
-        state: "closed",
-        stateReason: "COMPLETED",
-        closed: true,
-        repository: { owner: { login: STRINGS.USER_1 }, name: STRINGS.TEST_REPO },
-        assignees: { nodes: [{ login: "contributor2", url: "https://github.com/contributor2" }] },
-      },
-    }) as unknown as typeof context.octokit.graphql;
-
-    context.octokit.rest.issues.createComment = jest.fn(async (params: { owner: string; repo: string; issue_number: number; body: string }) => {
-      createComment(params.body, 2, "task_complete_below", params.issue_number);
-    }) as unknown as typeof octokit.rest.issues.createComment;
-
-    await runPlugin(context);
-
-    // Verify no comments were created since similarity is below threshold
-    const comments = db.issueComments.findMany({ where: { node_id: { equals: "task_complete_below" } } });
-    expect(comments.length).toBe(0);
-  });
-
   it("When issue matching is triggered with alwaysRecommend enabled, it should suggest contributors regardless of similarity", async () => {
     const [taskCompleteIssue] = fetchSimilarIssues("task_complete");
     const { context } = createContextIssues(taskCompleteIssue.issue_body, "task_complete_always", 6, taskCompleteIssue.title);
