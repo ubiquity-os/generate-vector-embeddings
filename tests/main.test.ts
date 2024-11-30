@@ -485,7 +485,7 @@ describe("Plugin tests", () => {
       },
       command: null,
       adapters: {} as Context["adapters"],
-      logger: new Logs("debug"),
+      logger: new Logs("debug") as unknown as Context["logger"],
       env: {} as Env,
       octokit: octokit,
     };
