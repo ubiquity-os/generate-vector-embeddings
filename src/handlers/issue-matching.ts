@@ -93,6 +93,8 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
       }
     });
     const issueList = (await Promise.all(fetchPromises)).filter((issue) => issue !== null);
+
+    logger.debug("Fetched similar issues", { issueList });
     issueList.forEach((issue: IssueGraphqlResponse) => {
       // Only use completed issues that have assignees
       if (issue.node.closed && issue.node.stateReason === "COMPLETED" && issue.node.assignees.nodes.length > 0) {
@@ -124,9 +126,9 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     //Check if the comment already exists
     const existingComment = listIssues.data.find((comment) => comment.body && comment.body.includes(">[!NOTE]" + "\n" + commentStart));
 
-    logger.debug("Matched issues", { matchResultArray });
+    logger.debug("Matched issues", { matchResultArray, length: matchResultArray.size });
 
-    if (matchResultArray.size === 0 || (!context.config.alwaysRecommend && !issueList)) {
+    if (matchResultArray.size === 0) {
       if (existingComment) {
         // If the comment already exists, delete it
         await octokit.rest.issues.deleteComment({
@@ -151,7 +153,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     logger.debug("Sorted contributors", { sortedContributors });
 
     // Use alwaysRecommend if specified
-    const numToShow = context.config.alwaysRecommend;
+    const numToShow = context.config.alwaysRecommend || 3;
     const limitedContributors = new Map(sortedContributors.slice(0, numToShow).map(({ login, matches }) => [login, matches]));
 
     const comment = commentBuilder(limitedContributors);
