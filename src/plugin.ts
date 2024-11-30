@@ -45,12 +45,12 @@ export async function runPlugin(context: Context) {
     switch (eventName) {
       case "issues.opened":
         await addIssue(context as Context<"issues.opened">);
-        await issueChecker(context as Context<"issues.opened">);
-        return await issueMatching(context as Context<"issues.opened">);
+        await issueMatching(context as Context<"issues.opened">);
+        return await issueChecker(context as Context<"issues.opened">);
       case "issues.edited":
-        await issueChecker(context as Context<"issues.edited">);
         await updateIssue(context as Context<"issues.edited">);
-        return await issueMatching(context as Context<"issues.edited">);
+        await issueMatching(context as Context<"issues.edited">);
+        return await issueChecker(context as Context<"issues.edited">);
       case "issues.deleted":
         return await deleteIssues(context as Context<"issues.deleted">);
       case "issues.transferred":
