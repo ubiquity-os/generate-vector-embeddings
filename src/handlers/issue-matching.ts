@@ -27,9 +27,8 @@ export interface IssueGraphqlResponse {
 
 /**
  * Checks if the current issue is a duplicate of an existing issue.
- * If a similar issue is found, a comment is added to the current issue.
+ * If a similar completed issue is found, it will add a comment to the issue with the assignee(s) of the similar issue.
  * @param context The context object
- * @returns True if a similar issue is found, false otherwise
  **/
 export async function issueMatching(context: Context<"issues.opened" | "issues.edited" | "issues.labeled">) {
   const {

@@ -22,7 +22,6 @@ export interface IssueGraphqlResponse {
  * Checks if the current issue is a duplicate of an existing issue.
  * If a similar issue is found, a footnote is added to the current issue.
  * @param context The context object
- * @returns True if a similar issue is found, false otherwise
  **/
 export async function issueChecker(context: Context<"issues.opened" | "issues.edited">) {
   const {
@@ -35,7 +34,7 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
   let issueBody = issue.body;
   if (!issueBody) {
     logger.info("Issue body is empty", { issue });
-    return false;
+    return;
   }
   issueBody = removeFootnotes(issueBody);
   const similarIssues = await supabase.issue.findSimilarIssues({
@@ -62,12 +61,12 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
         state: "closed",
         state_reason: "not_planned",
       });
-      return true;
+      return;
     }
     if (processedIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.warningThreshold} already exists`);
       await handleSimilarIssuesComment(context, payload, issueBody, issue.number, processedIssues);
-      return true;
+      return;
     }
   } else {
     //Use the IssueBody (Without footnotes) to update the issue when no similar issues are found
@@ -82,11 +81,20 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
     }
   }
   context.logger.info("No similar issues found");
-  return false;
 }
 
 function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg: string, repoName: string, similarIssueRepoName: string): boolean {
   return repoOrg === similarIssueRepoOrg && repoName === similarIssueRepoName;
+}
+
+function splitIntoSentences(text: string): string[] {
+  const sentenceRegex = /([^.!?\s][^.!?]*(?:[.!?](?!['"]?\s|$)[^.!?]*)*[.!?]?['"]?(?=\s|$))/g;
+  const sentences: string[] = [];
+  let match;
+  while ((match = sentenceRegex.exec(text)) !== null) {
+    sentences.push(match[0].trim());
+  }
+  return sentences;
 }
 
 /**
@@ -96,18 +104,6 @@ function matchRepoOrgToSimilarIssueRepoOrg(repoOrg: string, similarIssueRepoOrg:
  * @returns The most similar sentence and its similarity score
  */
 function findMostSimilarSentence(issueContent: string, similarIssueContent: string, context: Context): { sentence: string; similarity: number; index: number } {
-  // Regex to match sentences while preserving URLs
-  const sentenceRegex = /([^.!?\s][^.!?]*(?:[.!?](?!['"]?\s|$)[^.!?]*)*[.!?]?['"]?(?=\s|$))/g;
-  // Function to split text into sentences while preserving URLs
-  const splitIntoSentences = (text: string): string[] => {
-    const sentences: string[] = [];
-    let match;
-    while ((match = sentenceRegex.exec(text)) !== null) {
-      sentences.push(match[0].trim());
-    }
-    return sentences;
-  };
-
   const issueSentences = splitIntoSentences(issueContent);
   const similarIssueSentences = splitIntoSentences(similarIssueContent);
 
