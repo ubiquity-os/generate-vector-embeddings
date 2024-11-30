@@ -1,4 +1,5 @@
 import { Context } from "../types";
+import { IssueSimilaritySearchResult } from "../adapters/supabase/helpers/issues";
 import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 
 export interface IssueGraphqlResponse {
@@ -41,44 +42,56 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
   const issueContent = issue.body + issue.title;
   const commentStart = ">The following contributors may be suitable for this task:";
   const matchResultArray: Map<string, Array<string>> = new Map();
-  const similarIssues = await supabase.issue.findSimilarIssues(issueContent, context.config.jobMatchingThreshold, issue.node_id);
+  const similarIssues = await supabase.issue.findSimilarIssues({
+    markdown: issueContent,
+    threshold: context.config.jobMatchingThreshold,
+    currentId: issue.node_id,
+  });
   if (similarIssues && similarIssues.length > 0) {
-    similarIssues.sort((a, b) => b.similarity - a.similarity); // Sort by similarity
-    const fetchPromises = similarIssues.map(async (issue) => {
-      const issueObject: IssueGraphqlResponse = await context.octokit.graphql(
-        `query ($issueNodeId: ID!) {
-            node(id: $issueNodeId) {
-              ... on Issue {
-                title
-                url
-                state
-                repository{
-                  name
-                  owner {
-                    login
+    similarIssues.sort((a: IssueSimilaritySearchResult, b: IssueSimilaritySearchResult) => b.similarity - a.similarity); // Sort by similarity
+    const fetchPromises = similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
+      try {
+        const issueObject: IssueGraphqlResponse = await context.octokit.graphql(
+          /* GraphQL */
+          `
+            query ($issueNodeId: ID!) {
+              node(id: $issueNodeId) {
+                ... on Issue {
+                  title
+                  url
+                  state
+                  repository {
+                    name
+                    owner {
+                      login
+                    }
                   }
-                }
-                stateReason
-                closed
-                assignees(first: 10) {
-                  nodes {
-                    login
-                    url
+                  stateReason
+                  closed
+                  assignees(first: 10) {
+                    nodes {
+                      login
+                      url
+                    }
                   }
                 }
               }
             }
-          }`,
-        { issueNodeId: issue.issue_id }
-      );
-      issueObject.similarity = issue.similarity;
-      return issueObject;
+          `,
+          { issueNodeId: issue.issue_id }
+        );
+        issueObject.similarity = issue.similarity;
+        return issueObject;
+      } catch (error) {
+        context.logger.error(`Failed to fetch issue ${issue.issue_id}: ${error}`, { issue });
+        return null;
+      }
     });
-    const issueList = await Promise.all(fetchPromises);
-    issueList.forEach((issue) => {
+    const issueList = (await Promise.all(fetchPromises)).filter((issue) => issue !== null);
+    issueList.forEach((issue: IssueGraphqlResponse) => {
       if (issue.node.closed && issue.node.stateReason === "COMPLETED" && issue.node.assignees.nodes.length > 0) {
         const assignees = issue.node.assignees.nodes;
-        assignees.forEach((assignee) => {
+        assignees.forEach((assignee: { login: string; url: string }) => {
           const similarityPercentage = Math.round(issue.similarity * 100);
           const issueLink = issue.node.url.replace(/https?:\/\/github.com/, "https://www.github.com");
           if (matchResultArray.has(assignee.login)) {
@@ -134,8 +147,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     }
   }
 
-  logger.ok(`Successfully created issue comment!`);
-  logger.debug(`Exiting issueMatching handler`);
+  logger.ok(`Exiting issueMatching handler!`, { similarIssues: similarIssues || "No similar issues found" });
 }
 
 /**
@@ -145,9 +157,9 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
  */
 function commentBuilder(matchResultArray: Map<string, Array<string>>): string {
   const commentLines: string[] = [">[!NOTE]", ">The following contributors may be suitable for this task:"];
-  matchResultArray.forEach((issues, assignee) => {
+  matchResultArray.forEach((issues: Array<string>, assignee: string) => {
     commentLines.push(`>### [${assignee}](https://www.github.com/${assignee})`);
-    issues.forEach((issue) => {
+    issues.forEach((issue: string) => {
       commentLines.push(issue);
     });
   });
