@@ -47,7 +47,7 @@ export async function issueChecker(context: Context<"issues.opened" | "issues.ed
     processedIssues = processedIssues.filter((issue) =>
       matchRepoOrgToSimilarIssueRepoOrg(payload.repository.owner.login, issue.node.repository.owner.login, payload.repository.name, issue.node.repository.name)
     );
-    const matchIssues = processedIssues.filter((issue) => parseFloat(issue.similarity) >= context.config.matchThreshold);
+    const matchIssues = processedIssues.filter((issue) => parseFloat(issue.similarity) / 100 >= context.config.matchThreshold);
     if (matchIssues.length > 0) {
       logger.info(`Similar issue which matches more than ${context.config.matchThreshold} already exists`, { matchIssues });
       //To the issue body, add a footnote with the link to the similar issue
