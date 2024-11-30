@@ -15,10 +15,7 @@ import { db } from "./__mocks__/db";
 import { server } from "./__mocks__/node";
 import { IssueSimilaritySearchResult } from "../src/adapters/supabase/helpers/issues";
 
-const ISSUE_URL = `https://github.com/${STRINGS.USER_1}/${STRINGS.TEST_REPO}/issues/3#3`;
-const SIMILAR_ISSUE_TITLE = "Description: The Java service layer's performance deteriorates under high load, partly due to the absence of effective caching.";
-const ISSUE_URL_TEMPLATE = `https://github.com/${STRINGS.USER_1}/${STRINGS.TEST_REPO}/issues/1`;
-const CONTRIBUTOR_SUGGESTION_TEXT = "The following contributors may be suitable for this task:";
+const DEFAULT_HOOK = "issue_comment.created";
 
 dotenv.config();
 const octokit = new Octokit();
@@ -66,8 +63,9 @@ describe("Plugin tests", () => {
 
   it("When a comment is updated it should update the database", async () => {
     const updateId = "sasasUpdate";
-    const { context } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, updateId, "1", "issue_comment.created");
+    const { context } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, updateId, "1", DEFAULT_HOOK);
     const supabase = context.adapters.supabase;
+
     // Create the issue first
     await supabase.issue.createIssue({
       markdown: "Test Body",
@@ -93,7 +91,7 @@ describe("Plugin tests", () => {
   });
 
   it("When a comment is deleted it should delete it from the database", async () => {
-    const { context } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, "sasasDelete", "1", "issue_comment.created");
+    const { context } = createContext(STRINGS.HELLO_WORLD, 1, 1, 1, "sasasDelete", "1", DEFAULT_HOOK);
 
     // First create the comment
     await runPlugin(context);
@@ -141,7 +139,7 @@ describe("Plugin tests", () => {
       node: {
         __typename: "Issue",
         title: STRINGS.SIMILAR_ISSUE,
-        url: ISSUE_URL,
+        url: STRINGS.ISSUE_URL,
         number: 3,
         body: warningThresholdIssue1.issue_body,
         repository: {
@@ -170,8 +168,8 @@ describe("Plugin tests", () => {
     context2.octokit.rest.issues.update = jest.fn(async (params: { owner: string; repo: string; issue_number: number; body: string }) => {
       // Find the most similar sentence (first sentence in this case)
       const updatedBody =
-        warningThresholdIssue2.issue_body.replace(SIMILAR_ISSUE_TITLE, `${SIMILAR_ISSUE_TITLE}[^01^]`) +
-        `\n\n[^01^]: ⚠ 80% possible duplicate - [${STRINGS.SIMILAR_ISSUE}](${ISSUE_URL})\n\n`;
+        warningThresholdIssue2.issue_body.replace(STRINGS.SIMILAR_ISSUE_TITLE, `${STRINGS.SIMILAR_ISSUE_TITLE}[^01^]`) +
+        `\n\n[^01^]: ⚠ 80% possible duplicate - [${STRINGS.SIMILAR_ISSUE}](${STRINGS.ISSUE_URL})\n\n`;
 
       db.issue.update({
         where: {
@@ -187,7 +185,7 @@ describe("Plugin tests", () => {
 
     const issue = db.issue.findFirst({ where: { node_id: { equals: "warning2" } } }) as unknown as Context["payload"]["issue"];
     expect(issue.state).toBe("open");
-    expect(issue.body).toContain(`[^01^]: ⚠ 80% possible duplicate - [${STRINGS.SIMILAR_ISSUE}](${ISSUE_URL})`);
+    expect(issue.body).toContain(`[^01^]: ⚠ 80% possible duplicate - [${STRINGS.SIMILAR_ISSUE}](${STRINGS.ISSUE_URL})`);
   });
 
   it("When an issue is created with similarity above match threshold, it should close the issue and add a caution alert", async () => {
@@ -217,7 +215,7 @@ describe("Plugin tests", () => {
     context2.octokit.graphql = jest.fn<typeof context2.octokit.graphql>().mockResolvedValue({
       node: {
         title: STRINGS.SIMILAR_ISSUE,
-        url: ISSUE_URL,
+        url: STRINGS.ISSUE_URL,
         number: 3,
         body: matchThresholdIssue1.issue_body,
         repository: {
@@ -245,7 +243,7 @@ describe("Plugin tests", () => {
 
     context2.octokit.rest.issues.update = jest.fn(
       async (params: { owner: string; repo: string; issue_number: number; body?: string; state?: string; state_reason?: string }) => {
-        const updatedBody = `${matchThresholdIssue2.issue_body}\n\n>[!CAUTION]\n> This issue may be a duplicate of the following issues:\n> - [${STRINGS.SIMILAR_ISSUE}](${ISSUE_URL})\n`;
+        const updatedBody = `${matchThresholdIssue2.issue_body}\n\n>[!CAUTION]\n> This issue may be a duplicate of the following issues:\n> - [${STRINGS.SIMILAR_ISSUE}](${STRINGS.ISSUE_URL})\n`;
         db.issue.update({
           where: {
             number: { equals: params.issue_number },
@@ -265,7 +263,7 @@ describe("Plugin tests", () => {
     expect(issue.state_reason).toBe("not_planned");
     expect(issue.body).toContain(">[!CAUTION]");
     expect(issue.body).toContain("This issue may be a duplicate of the following issues:");
-    expect(issue.body).toContain(`- [${STRINGS.SIMILAR_ISSUE}](${ISSUE_URL})`);
+    expect(issue.body).toContain(`- [${STRINGS.SIMILAR_ISSUE}](${STRINGS.ISSUE_URL})`);
   });
 
   it("When issue matching is triggered, it should suggest contributors based on similarity", async () => {
@@ -294,8 +292,8 @@ describe("Plugin tests", () => {
     // Mock the graphql function to return predefined issue data
     context.octokit.graphql = jest.fn<typeof context.octokit.graphql>().mockResolvedValue({
       node: {
-        title: "Similar Issue",
-        url: ISSUE_URL_TEMPLATE,
+        title: "Similar Issue: Suggest based on Similarity",
+        url: STRINGS.ISSUE_URL_TEMPLATE,
         state: "closed",
         stateReason: "COMPLETED",
         closed: true,
@@ -312,7 +310,7 @@ describe("Plugin tests", () => {
 
     const comments = db.issueComments.findMany({ where: { node_id: { equals: "task_complete" } } });
     expect(comments.length).toBe(1);
-    expect(comments[0].body).toContain(CONTRIBUTOR_SUGGESTION_TEXT);
+    expect(comments[0].body).toContain(STRINGS.CONTRIBUTOR_SUGGESTION_TEXT);
     expect(comments[0].body).toContain("contributor1");
     expect(comments[0].body).toContain("98% Match");
   });
@@ -324,7 +322,6 @@ describe("Plugin tests", () => {
     // Explicitly set alwaysRecommend to 0 to ensure it's disabled
     context.config = {
       ...context.config,
-      alwaysRecommend: 0,
     };
 
     context.adapters.supabase.issue.createIssue = jest.fn(async () => {
@@ -350,7 +347,7 @@ describe("Plugin tests", () => {
     context.octokit.graphql = jest.fn<typeof context.octokit.graphql>().mockResolvedValue({
       node: {
         title: "Similar Issue",
-        url: ISSUE_URL_TEMPLATE,
+        url: STRINGS.ISSUE_URL_TEMPLATE,
         state: "closed",
         stateReason: "COMPLETED",
         closed: true,
@@ -403,7 +400,7 @@ describe("Plugin tests", () => {
     context.octokit.graphql = jest.fn<typeof context.octokit.graphql>().mockResolvedValue({
       node: {
         title: "Similar Issue",
-        url: ISSUE_URL_TEMPLATE,
+        url: STRINGS.ISSUE_URL_TEMPLATE,
         state: "closed",
         stateReason: "COMPLETED",
         closed: true,
@@ -421,7 +418,7 @@ describe("Plugin tests", () => {
     // Verify comment was created despite low similarity
     const comments = db.issueComments.findMany({ where: { node_id: { equals: "task_complete_always" } } });
     expect(comments.length).toBe(1);
-    expect(comments[0].body).toContain(CONTRIBUTOR_SUGGESTION_TEXT);
+    expect(comments[0].body).toContain(STRINGS.CONTRIBUTOR_SUGGESTION_TEXT);
     expect(comments[0].body).toContain("contributor3");
     expect(comments[0].body).toContain("50% Match");
   });
@@ -433,7 +430,7 @@ describe("Plugin tests", () => {
     commentId: number = 1,
     nodeId: string = "sasas",
     issueNodeId: string = "1",
-    eventName: Context["eventName"] = "issue_comment.created"
+    eventName: Context["eventName"] = DEFAULT_HOOK
   ) {
     const repo = db.repo.findFirst({ where: { id: { equals: repoId } } }) as unknown as Context["payload"]["repository"];
     const sender = db.users.findFirst({ where: { id: { equals: payloadSenderId } } }) as unknown as Context["payload"]["sender"];
@@ -468,7 +465,7 @@ describe("Plugin tests", () => {
     sender: Context["payload"]["sender"],
     issue: Context["payload"]["issue"],
     comment: Context<"issue_comment.created">["payload"]["comment"] | undefined,
-    eventName: Context["eventName"] = "issue_comment.created"
+    eventName: Context["eventName"] = DEFAULT_HOOK
   ): Context {
     return {
       eventName: eventName,
