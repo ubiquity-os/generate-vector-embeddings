@@ -18,7 +18,7 @@ export interface IssueSimilaritySearchResult {
   similarity: number;
 }
 
-interface IssueData {
+export interface IssueData {
   markdown: string | null;
   id: string;
   author_id: number;

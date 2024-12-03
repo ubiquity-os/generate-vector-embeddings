@@ -13,6 +13,7 @@ import { Context } from "./types";
 import { Database } from "./types/database";
 import { isIssueCommentEvent, isIssueEvent } from "./types/typeguards";
 import { issueTransfer } from "./handlers/transfer-issue";
+import { completeIssue } from "./handlers/complete-issue";
 
 /**
  * The main plugin function. Split for easier testing.
@@ -44,16 +45,18 @@ export async function runPlugin(context: Context) {
     switch (eventName) {
       case "issues.opened":
         await addIssue(context as Context<"issues.opened">);
-        await issueChecker(context as Context<"issues.opened">);
-        return await issueMatching(context as Context<"issues.opened">);
+        await issueMatching(context as Context<"issues.opened">);
+        return await issueChecker(context as Context<"issues.opened">);
       case "issues.edited":
-        await issueChecker(context as Context<"issues.edited">);
         await updateIssue(context as Context<"issues.edited">);
-        return await issueMatching(context as Context<"issues.edited">);
+        await issueMatching(context as Context<"issues.edited">);
+        return await issueChecker(context as Context<"issues.edited">);
       case "issues.deleted":
         return await deleteIssues(context as Context<"issues.deleted">);
       case "issues.transferred":
         return await issueTransfer(context as Context<"issues.transferred">);
+      case "issues.closed":
+        return await completeIssue(context as Context<"issues.closed">);
     }
   } else if (eventName == "issues.labeled") {
     return await issueMatching(context as Context<"issues.labeled">);
