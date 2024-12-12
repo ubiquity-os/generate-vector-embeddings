@@ -114,6 +114,14 @@ export function createMockAdapters(context: Context) {
 
           return [];
         }),
+        findSimilarIssuesToMatch: jest.fn(async (params: { markdown: string; threshold: number; currentId: string }) => {
+          if (params.currentId === "task_complete") {
+            return [{ id: "similar3", similarity: 0.98 }];
+          } else if (params.currentId === "task_complete_always") {
+            return [{ id: "similar5", similarity: 0.5 }];
+          }
+          return [];
+        }),
         createIssue: jest.fn(async (issue: IssueData) => {
           issueMap.set(issue.id, issue);
         }),

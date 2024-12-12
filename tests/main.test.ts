@@ -284,11 +284,6 @@ describe("Plugin tests", () => {
       );
     });
 
-    // Mock the findSimilarIssues function to return predefined similar issues
-    context.adapters.supabase.issue.findSimilarIssues = jest
-      .fn<typeof context.adapters.supabase.issue.findSimilarIssues>()
-      .mockResolvedValue([{ id: "similar3", similarity: 0.98 }] as unknown as IssueSimilaritySearchResult[]);
-
     // Mock the graphql function to return predefined issue data
     context.octokit.graphql = jest.fn<typeof context.octokit.graphql>().mockResolvedValue({
       node: {
@@ -338,11 +333,6 @@ describe("Plugin tests", () => {
         STRINGS.USER_1
       );
     });
-
-    // Mock findSimilarIssues to return a result with low similarity
-    context.adapters.supabase.issue.findSimilarIssues = jest
-      .fn<typeof context.adapters.supabase.issue.findSimilarIssues>()
-      .mockResolvedValue([{ id: "similar5", similarity: 0.5 }] as unknown as IssueSimilaritySearchResult[]);
 
     // Mock graphql to return issue data with a contributor
     context.octokit.graphql = jest.fn<typeof context.octokit.graphql>().mockResolvedValue({
