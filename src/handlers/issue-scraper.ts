@@ -282,31 +282,31 @@ export async function issueScraper(username: string, token?: string): Promise<st
   }
 }
 
-function parseArgs() {
-  const args = process.argv.slice(2);
-  let username: string | undefined;
+// function parseArgs() {
+//   const args = process.argv.slice(2);
+//   let username: string | undefined;
 
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--username" || args[i] === "-u") {
-      username = args[i + 1];
-      i++;
-    }
-  }
+//   for (let i = 0; i < args.length; i++) {
+//     if (args[i] === "--username" || args[i] === "-u") {
+//       username = args[i + 1];
+//       i++;
+//     }
+//   }
 
-  return { username };
-}
+//   return { username };
+// }
 
-const { username } = parseArgs();
-if (!username) {
-  console.error("Username is required");
-  process.exit(1);
-}
+// const { username } = parseArgs();
+// if (!username) {
+//   console.error("Username is required");
+//   process.exit(1);
+// }
 
-console.log(`Fetching issues for user: ${username}`);
+// console.log(`Fetching issues for user: ${username}`);
 
-issueScraper(username)
-  .then((result) => console.log(result))
-  .catch((error) => {
-    console.error("Error running issue scraper:", error);
-    process.exit(1);
-  });
+// issueScraper(username)
+//   .then((result) => console.log(result))
+//   .catch((error) => {
+//     console.error("Error running issue scraper:", error);
+//     process.exit(1);
+//   });
