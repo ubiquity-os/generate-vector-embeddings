@@ -1,9 +1,11 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { VoyageAIClient } from "voyageai";
-import { Octokit } from "@octokit/rest";
+import { customOctokit as Octokit } from "@ubiquity-os/plugin-sdk/octokit";
 import markdownit from "markdown-it";
 import plainTextPlugin from "markdown-it-plain-text";
 import "dotenv/config";
+import { createAdapters } from "../adapters";
+import { Context } from "../types/context";
 
 // Check required environment variables
 function checkEnvVars() {
@@ -26,26 +28,6 @@ function markdownToPlainText(markdown: string | null): string | null {
   md.use(plainTextPlugin);
   md.render(markdown);
   return md.plainText;
-}
-
-function createAdapters(voyage: VoyageAIClient) {
-  return {
-    voyage: {
-      embedding: {
-        createEmbedding: async (text: string | null) => {
-          if (text === null) {
-            throw new Error("Text is null");
-          }
-          const response = await voyage.embed({
-            input: text,
-            model: "voyage-large-2-instruct",
-            inputType: "document",
-          });
-          return (response.data && response.data[0]?.embedding) || [];
-        },
-      },
-    },
-  };
 }
 
 interface IssueMetadata {
@@ -219,22 +201,6 @@ const USER_ISSUES_QUERY = `
   }
 `;
 
-interface ProcessingStats {
-  totalOrgs: number;
-  accessibleOrgs: number;
-  totalRepos: number;
-  accessibleRepos: number;
-  totalIssues: number;
-  processedIssues: number;
-  updatedIssues: number;
-  newIssues: number;
-  errors: Array<{
-    type: "org" | "repo" | "issue";
-    name: string;
-    error: string;
-  }>;
-}
-
 interface DatabaseIssue {
   id: string;
   markdown: string;
@@ -260,22 +226,10 @@ const ERROR_MESSAGES = {
 };
 
 async function fetchAllClosedIssues(
-  octokit: Octokit,
+  octokit: InstanceType<typeof Octokit>,
   existingIssues: Map<string, DatabaseIssue>,
   username?: string
-): Promise<{ issues: IssueMetadata[]; stats: ProcessingStats }> {
-  const stats: ProcessingStats = {
-    totalOrgs: 0,
-    accessibleOrgs: 0,
-    totalRepos: 0,
-    accessibleRepos: 0,
-    totalIssues: 0,
-    processedIssues: 0,
-    updatedIssues: 0,
-    newIssues: 0,
-    errors: [],
-  };
-
+): Promise<{ issues: IssueMetadata[] }> {
   try {
     const response = await octokit.graphql<GraphQlResponse>(username ? USER_ISSUES_QUERY : ORGANIZATION_ISSUES_QUERY, username ? { username } : {});
     const allIssues: IssueMetadata[] = [];
@@ -283,36 +237,18 @@ async function fetchAllClosedIssues(
     if (username && response.user) {
       // Process user repositories
       const repos = response.user.repositories.nodes;
-      stats.totalRepos = repos.length;
 
       for (const repo of repos) {
         try {
           if (!repo.id || !repo.name) {
-            stats.errors.push({
-              type: "repo",
-              name: `${repo.owner.login}/${repo.name || "unknown"}`,
-              error: ERROR_MESSAGES.INCOMPLETE_REPO,
-            });
             continue;
           }
-          stats.accessibleRepos++;
-
           const issues = repo.issues.nodes;
-          stats.totalIssues += issues.length;
 
           for (const issue of issues) {
             try {
               const STATE_REASON_COMPLETED = "COMPLETED";
               if (issue.stateReason === STATE_REASON_COMPLETED) {
-                const existingIssue = existingIssues.get(issue.nodeId);
-                const isUpdated = existingIssue && new Date(issue.updatedAt) > new Date(existingIssue.modified_at);
-
-                if (isUpdated) {
-                  stats.updatedIssues++;
-                } else if (!existingIssue) {
-                  stats.newIssues++;
-                }
-
                 allIssues.push({
                   id: issue.id,
                   nodeId: issue.nodeId,
@@ -331,72 +267,37 @@ async function fetchAllClosedIssues(
                   closedAt: issue.closedAt,
                   updatedAt: issue.updatedAt,
                 });
-                stats.processedIssues++;
               }
             } catch (error) {
-              stats.errors.push({
-                type: "issue",
-                name: `${repo.owner.login}/${repo.name}#${issue.number}`,
-                error: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN,
-              });
+              console.error(`Error processing issue ${repo.name}#${issue.number}:`, error);
             }
           }
         } catch (error) {
-          stats.errors.push({
-            type: "repo",
-            name: `${repo.owner.login}/${repo.name || "unknown"}`,
-            error: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN,
-          });
+          console.error(`Error processing repository ${repo.name}:`, error);
         }
       }
     } else if (response.viewer) {
       // Process organization repositories
       const orgs = response.viewer.organizations.nodes;
-      stats.totalOrgs = orgs.length;
 
       for (const org of orgs) {
         try {
           if (!org.id || !org.login) {
-            stats.errors.push({
-              type: "org",
-              name: org.login || "unknown",
-              error: ERROR_MESSAGES.INCOMPLETE_ORG,
-            });
+            console.error(`Organization data is incomplete or inaccessible: ${org.login}`);
             continue;
           }
-          stats.accessibleOrgs++;
-
           const repos = org.repositories.nodes;
-          stats.totalRepos += repos.length;
-
           for (const repo of repos) {
             try {
               if (!repo.id || !repo.name) {
-                stats.errors.push({
-                  type: "repo",
-                  name: `${org.login}/${repo.name || "unknown"}`,
-                  error: ERROR_MESSAGES.INCOMPLETE_REPO,
-                });
+                console.error(`Repository data is incomplete or inaccessible: ${org.login}/${repo.name}`);
                 continue;
               }
-              stats.accessibleRepos++;
-
               const issues = repo.issues.nodes;
-              stats.totalIssues += issues.length;
-
               for (const issue of issues) {
                 try {
                   const STATE_REASON_COMPLETED = "COMPLETED";
                   if (issue.stateReason === STATE_REASON_COMPLETED) {
-                    const existingIssue = existingIssues.get(issue.nodeId);
-                    const isUpdated = existingIssue && new Date(issue.updatedAt) > new Date(existingIssue.modified_at);
-
-                    if (isUpdated) {
-                      stats.updatedIssues++;
-                    } else if (!existingIssue) {
-                      stats.newIssues++;
-                    }
-
                     allIssues.push({
                       id: issue.id,
                       nodeId: issue.nodeId,
@@ -415,35 +316,22 @@ async function fetchAllClosedIssues(
                       closedAt: issue.closedAt,
                       updatedAt: issue.updatedAt,
                     });
-                    stats.processedIssues++;
                   }
                 } catch (error) {
-                  stats.errors.push({
-                    type: "issue",
-                    name: `${org.login}/${repo.name}#${issue.number}`,
-                    error: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN,
-                  });
+                  console.error(`Error processing issue ${org.login}/${repo.name}#${issue.number}:`, error);
                 }
               }
             } catch (error) {
-              stats.errors.push({
-                type: "repo",
-                name: `${org.login}/${repo.name || "unknown"}`,
-                error: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN,
-              });
+              console.error(`Error processing repository ${org.login}/${repo.name}:`, error);
             }
           }
         } catch (error) {
-          stats.errors.push({
-            type: "org",
-            name: org.login || "unknown",
-            error: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN,
-          });
+          console.error(`Error processing organization ${org.login}:`, error);
         }
       }
     }
 
-    return { issues: allIssues, stats };
+    return { issues: allIssues };
   } catch (error) {
     throw new Error(`Failed to fetch issues: ${error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN}`);
   }
@@ -454,8 +342,21 @@ export async function issueScraper(token?: string, username?: string): Promise<s
     // Check environment variables first
     checkEnvVars();
 
+    //Build Context
+    const context = {
+      adapters: {},
+      logger: {
+        info: (message: string, data: Record<string, unknown>) => {
+          console.log("INFO:", message + ":", data);
+        },
+        error: (message: string, data: Record<string, unknown>) => {
+          console.error("ERROR:", message + ":", data);
+        },
+      },
+      octokit: new Octokit({ auth: token || process.env.GITHUB_TOKEN }),
+    } as unknown as Context;
+
     // Get token from env if not provided
-    const githubToken = token || process.env.GITHUB_TOKEN;
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_KEY;
     const voyageApiKey = process.env.VOYAGEAI_API_KEY;
@@ -469,15 +370,14 @@ export async function issueScraper(token?: string, username?: string): Promise<s
     const voyageClient = new VoyageAIClient({
       apiKey: voyageApiKey,
     });
-    const octokit = new Octokit({ auth: githubToken });
 
-    const adapters = createAdapters(voyageClient);
+    const adapters = createAdapters(supabase, voyageClient, context);
 
     // Get existing issues from database
     const existingIssues = await getExistingIssues(supabase);
 
     // Fetch closed issues from all accessible organizations and repositories
-    const { issues, stats } = await fetchAllClosedIssues(octokit, existingIssues, username);
+    const { issues } = await fetchAllClosedIssues(context.octokit, existingIssues, username);
 
     // Process each issue
     const processedIssues: Array<{ issue: IssueMetadata; status: string; error?: string }> = [];
@@ -541,12 +441,10 @@ export async function issueScraper(token?: string, username?: string): Promise<s
       {
         success: true,
         stats: {
-          ...stats,
           storageSuccessful: processedIssues.filter((p) => !p.error).length,
           storageFailed: processedIssues.filter((p) => p.error).length,
         },
         errors: [
-          ...stats.errors,
           ...processedIssues
             .filter((p) => p.error)
             .map((p) => ({
