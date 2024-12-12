@@ -56,6 +56,9 @@ interface IssueNode {
   repository: {
     id: string;
     name: string;
+    owner: {
+      login: string;
+    };
   };
 }
 
@@ -103,6 +106,9 @@ const SEARCH_ISSUES_QUERY = `
           repository {
             id
             name
+            owner {
+              login
+            }
           }
         }
       }
@@ -128,10 +134,14 @@ async function fetchUserIssues(octokit: InstanceType<typeof Octokit>, username: 
   const searchText = `assignee:${username} is:issue is:closed`;
 
   while (hasNextPage) {
-    const response: GraphQlSearchResponse = await octokit.graphql<GraphQlSearchResponse>(SEARCH_ISSUES_QUERY, {
+    const variables: { searchText: string; after?: string } = {
       searchText,
-      after: cursor,
-    });
+    };
+    if (cursor) {
+      variables.after = cursor;
+    }
+
+    const response: GraphQlSearchResponse = await octokit.graphql<GraphQlSearchResponse>(SEARCH_ISSUES_QUERY, variables);
 
     const completedIssues = response.search.nodes.filter((issue) => issue.stateReason === "COMPLETED");
     allIssues.push(...completedIssues);
@@ -185,6 +195,7 @@ export async function issueScraper(username: string, token?: string): Promise<st
     for (const issue of issues) {
       try {
         const authorId = issue.author?.login ? await fetchAuthorId(context.octokit, issue.author.login) : -1;
+        const repoOwner = issue.repository.owner.login;
 
         const metadata: IssueMetadata = {
           nodeId: issue.id,
@@ -206,6 +217,26 @@ export async function issueScraper(username: string, token?: string): Promise<st
         const plaintext = markdownToPlainText(markdown);
         const embedding = await adapters.voyage.embedding.createEmbedding(plaintext);
 
+        const payload = {
+          issue: metadata,
+          action: "created",
+          sender: {
+            login: username,
+          },
+          repository: {
+            id: parseInt(issue.repository.id),
+            node_id: issue.repository.id,
+            name: issue.repository.name,
+            full_name: `${repoOwner}/${issue.repository.name}`,
+            owner: {
+              login: repoOwner,
+              id: authorId,
+              type: "User",
+              site_admin: false,
+            },
+          },
+        };
+
         const { error } = await supabase.from("issues").upsert({
           id: metadata.nodeId,
           markdown,
@@ -213,17 +244,7 @@ export async function issueScraper(username: string, token?: string): Promise<st
           embedding: JSON.stringify(embedding),
           author_id: metadata.authorId,
           modified_at: metadata.updatedAt,
-          payload: {
-            issue_number: metadata.number,
-            repository_name: metadata.repositoryName,
-            repository_id: metadata.repositoryId,
-            assignees: metadata.assignees,
-            state: metadata.state,
-            state_reason: metadata.stateReason,
-            created_at: metadata.createdAt,
-            closed_at: metadata.closedAt,
-            modified_at: metadata.updatedAt,
-          },
+          payload: payload,
         });
 
         processedIssues.push({
@@ -281,32 +302,3 @@ export async function issueScraper(username: string, token?: string): Promise<st
     throw error;
   }
 }
-
-// function parseArgs() {
-//   const args = process.argv.slice(2);
-//   let username: string | undefined;
-
-//   for (let i = 0; i < args.length; i++) {
-//     if (args[i] === "--username" || args[i] === "-u") {
-//       username = args[i + 1];
-//       i++;
-//     }
-//   }
-
-//   return { username };
-// }
-
-// const { username } = parseArgs();
-// if (!username) {
-//   console.error("Username is required");
-//   process.exit(1);
-// }
-
-// console.log(`Fetching issues for user: ${username}`);
-
-// issueScraper(username)
-//   .then((result) => console.log(result))
-//   .catch((error) => {
-//     console.error("Error running issue scraper:", error);
-//     process.exit(1);
-//   });
