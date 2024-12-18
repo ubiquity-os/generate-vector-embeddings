@@ -173,7 +173,7 @@ export class Issue extends SuperSupabase {
         top_k: 5,
       });
       if (error) {
-        this.context.logger.error("Error finding similar issues", {
+        this.context.logger.error("Unable to find similar issues", {
           Error: error,
           markdown,
           currentId,
@@ -184,10 +184,40 @@ export class Issue extends SuperSupabase {
       }
       return data;
     } catch (error) {
-      this.context.logger.error("Error finding similar issues", {
+      this.context.logger.error("Unable to find similar issues", {
         Error: error,
         markdown,
         currentId,
+        threshold,
+      });
+      return null;
+    }
+  }
+
+  async findSimilarIssuesToMatch({ markdown, currentId, threshold }: FindSimilarIssuesParams): Promise<IssueSimilaritySearchResult[] | null> {
+    // Create a new issue embedding
+    try {
+      const embedding = await this.context.adapters.voyage.embedding.createEmbedding(markdown);
+      const { data, error } = await this.supabase.rpc("find_similar_issues_to_match", {
+        current_id: currentId,
+        query_embedding: embedding,
+        threshold,
+        top_k: 5,
+      });
+      if (error) {
+        this.context.logger.error("Error finding similar issues", {
+          Error: error,
+          markdown,
+          threshold,
+          query_embedding: embedding,
+        });
+        return null;
+      }
+      return data;
+    } catch (error) {
+      this.context.logger.error("Error finding similar issues", {
+        Error: error,
+        markdown,
         threshold,
       });
       return null;

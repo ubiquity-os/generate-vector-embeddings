@@ -45,7 +45,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
   // If alwaysRecommend is enabled, use a lower threshold to ensure we get enough recommendations
   const threshold = context.config.alwaysRecommend && context.config.alwaysRecommend > 0 ? 0 : context.config.jobMatchingThreshold;
 
-  const similarIssues = await supabase.issue.findSimilarIssues({
+  const similarIssues = await supabase.issue.findSimilarIssuesToMatch({
     markdown: issueContent,
     threshold: threshold,
     currentId: issue.node_id,
@@ -91,10 +91,14 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
         return null;
       }
     });
-    const issueList = (await Promise.all(fetchPromises)).filter((issue) => issue !== null);
+    const issueList = await Promise.allSettled(fetchPromises);
 
     logger.debug("Fetched similar issues", { issueList });
-    issueList.forEach((issue: IssueGraphqlResponse) => {
+    issueList.forEach((issuePromise: PromiseSettledResult<IssueGraphqlResponse | null>) => {
+      if (!issuePromise || issuePromise.status === "rejected") {
+        return;
+      }
+      const issue = issuePromise.value as IssueGraphqlResponse;
       // Only use completed issues that have assignees
       if (issue.node.closed && issue.node.stateReason === "COMPLETED" && issue.node.assignees.nodes.length > 0) {
         const assignees = issue.node.assignees.nodes;
