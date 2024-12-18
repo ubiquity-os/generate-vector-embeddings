@@ -32,5 +32,6 @@
         "type": "number"
       }
     }
-  }
+  },
+  "homepage_url": "https://ubiquity-os-comment-vector-embeddings-development.ubiquity.workers.dev"
 }
