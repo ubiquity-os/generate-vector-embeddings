@@ -8,10 +8,10 @@ interface UserMetadata {
   };
 }
 
-export async function userIssueScraper(): Promise<void> {
+export async function userIssueScraper(fileDir: string): Promise<void> {
   try {
     // Read auth.users.json
-    const authUsersPath = path.join("/Users/sshivaditya/PROJECTS/issue-comment-embeddings/auth.users.json");
+    const authUsersPath = path.join(fileDir, "auth.users.json");
     const authUsersData = fs.readFileSync(authUsersPath, "utf-8");
     const users = JSON.parse(authUsersData) as UserMetadata[];
 
@@ -38,7 +38,7 @@ export async function userIssueScraper(): Promise<void> {
 }
 
 // Run the scraper
-userIssueScraper()
+userIssueScraper(process.cwd())
   .then(() => console.log("Completed processing all users"))
   .catch((error) => {
     console.error("Error running user issue scraper:", error);
