@@ -162,19 +162,21 @@ async function handleSimilarIssuesComment(
     const footnoteIndex = highestFootnoteIndex + index + 1; // Continue numbering from the highest existing footnote number
     const footnoteRef = `[^0${footnoteIndex}^]`;
     const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
-    const { sentence } = issue.mostSimilarSentence;
+    let { sentence } = issue.mostSimilarSentence;
     // Insert footnote reference after markdown links
 
     if (issue.node.title !== "Task Limit Improvements") {
       return;
+    } else {
+      sentence = "Originally posted by @0x4007 in ubiquity-os-marketplace/command-start-stop#100 (comment)";
     }
 
     const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
     const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
 
-    // If the sentence contains a markdown link, add the footnote after the link
+    // If the sentence contains a markdown link, add the footnote after the link with a space
     if (sentence.match(markdownLinkPattern)) {
-      updatedBody = updatedBody.replace(markdownLinkPattern, `$&${footnoteRef}`);
+      updatedBody = updatedBody.replace(markdownLinkPattern, `$& ${footnoteRef}`);
     } else {
       // Otherwise add footnote after the sentence as before
       updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
