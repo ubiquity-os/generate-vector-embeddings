@@ -163,20 +163,16 @@ async function handleSimilarIssuesComment(
     const footnoteRef = `[^0${footnoteIndex}^]`;
     const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
     const { sentence } = issue.mostSimilarSentence;
-    // Find the line containing the sentence
-    const lines = updatedBody.split("\n");
-    const lineIndex = lines.findIndex((line) => line.includes(sentence));
+    // Insert footnote reference after markdown links
+    const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
 
-    if (lineIndex !== -1) {
-      // If the line contains a markdown link, add footnote after the entire line
-      if (lines[lineIndex].match(/\[([^\]]+)\]\([^)]+\)/)) {
-        lines[lineIndex] = `${lines[lineIndex]}${footnoteRef}`;
-      } else {
-        // Otherwise add footnote after the sentence
-        const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]]/g, "\\$&")}`, "g");
-        lines[lineIndex] = lines[lineIndex].replace(sentencePattern, `${sentence}${footnoteRef}`);
-      }
-      updatedBody = lines.join("\n");
+    // If the sentence contains a markdown link, add the footnote after the link
+    if (sentence.match(markdownLinkPattern)) {
+      updatedBody = updatedBody.replace(markdownLinkPattern, `$&${footnoteRef}`);
+    } else {
+      // Otherwise add footnote after the sentence as before
+      updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
     }
     // Initialize footnotes array if not already done
     if (!footnotes) {
@@ -318,7 +314,7 @@ export function removeFootnotes(content: string): string {
 }
 
 export function removeCautionMessages(content: string): string {
-  const cautionRegex = />[!CAUTION]\n> This issue may be a duplicate of the following issues:\n((> - \[[^\]]+\]\([^)]+\)\n)+)/g;
+  const cautionRegex = />[!CAUTION]\n> This issue may be a duplicate of the following issues:\n((> - \[[^\]]+]\([^)]+\)\n)+)/g;
   return content.replace(cautionRegex, "");
 }
 
