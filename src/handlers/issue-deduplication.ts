@@ -164,6 +164,11 @@ async function handleSimilarIssuesComment(
     const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
     const { sentence } = issue.mostSimilarSentence;
     // Insert footnote reference after markdown links
+
+    if (issue.node.title !== "Task Limit Improvements") {
+      return;
+    }
+
     const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
     const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
 
