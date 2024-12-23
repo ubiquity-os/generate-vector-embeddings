@@ -202,7 +202,7 @@ export class Issue extends SuperSupabase {
         current_id: currentId,
         query_embedding: embedding,
         threshold,
-        top_k: 5,
+        top_k: 1500,
       });
       if (error) {
         this.context.logger.error("Error finding similar issues", {
