@@ -6,6 +6,8 @@ import threshold95_2 from "../__sample__/match_threshold_95_2.json";
 import warning75_1 from "../__sample__/warning_threshold_75_1.json";
 import warning75_2 from "../__sample__/warning_threshold_75_2.json";
 import taskComplete from "../__sample__/task_complete.json";
+import markdownLink1 from "../__sample__/markdown_link_issue_1.json";
+import markdownLink2 from "../__sample__/markdown_link_issue_2.json";
 
 interface SampleIssue {
   title: string;
@@ -241,6 +243,8 @@ export function fetchSimilarIssues(type?: string): SampleIssue[] {
       return [threshold95_1, threshold95_2];
     case "task_complete":
       return [taskComplete];
+    case "markdown_link":
+      return [markdownLink1, markdownLink2];
     default:
       return [threshold95_1, threshold95_2];
   }

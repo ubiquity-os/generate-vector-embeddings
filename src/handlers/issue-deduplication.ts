@@ -163,9 +163,17 @@ async function handleSimilarIssuesComment(
     const footnoteRef = `[^0${footnoteIndex}^]`;
     const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
     const { sentence } = issue.mostSimilarSentence;
-    // Insert footnote reference in the body
+    // Insert footnote reference after markdown links
+    const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
     const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
-    updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
+
+    // If the sentence contains a markdown link, add the footnote after the link
+    if (sentence.match(markdownLinkPattern)) {
+      updatedBody = updatedBody.replace(markdownLinkPattern, `$&${footnoteRef}`);
+    } else {
+      // Otherwise add footnote after the sentence as before
+      updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
+    }
     // Initialize footnotes array if not already done
     if (!footnotes) {
       footnotes = [];

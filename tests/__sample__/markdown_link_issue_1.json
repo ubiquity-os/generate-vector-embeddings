@@ -1,0 +1,4 @@
+{
+  "title": "Issue with markdown link",
+  "issue_body": "_Originally posted by @0x4007 in [https://github.com/ubiquity-os-marketplace/command-start-stop/issues/100#issuecomment-2535532258](https://github.com/ubiquity-os-marketplace/command-start-stop/issues/100#issuecomment-2535532258)_\n\nThis is a test issue that contains a markdown link. The footnote should be added after the entire line containing the link, not within the link itself."
+}
