@@ -1,4 +1,0 @@
-{
-  "title": "Similar issue with markdown link",
-  "issue_body": "_Originally posted by @0x4007 in [https://github.com/ubiquity-os-marketplace/command-start-stop/issues/100#issuecomment-2535532258](https://github.com/ubiquity-os-marketplace/command-start-stop/issues/100#issuecomment-2535532258)_\n\nThis is a similar test issue that also contains a markdown link. We'll use this to test that footnotes are added correctly after markdown links."
-}
