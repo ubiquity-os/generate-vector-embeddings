@@ -170,7 +170,7 @@ export class Issue extends SuperSupabase {
         query_embedding: embedding,
         current_id: currentId,
         threshold,
-        top_k: 100,
+        top_k: 5,
       });
       if (error) {
         this.context.logger.error("Unable to find similar issues", {
