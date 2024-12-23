@@ -361,6 +361,87 @@ describe("Plugin tests", () => {
     expect(comments[0].body).toContain("50% Match");
   });
 
+  it("When an issue contains markdown links, footnotes should be added after the entire line", async () => {
+    const [markdownLinkIssue1] = fetchSimilarIssues("markdown_link");
+    const { context } = createContextIssues(markdownLinkIssue1.issue_body, "markdown1", 7, markdownLinkIssue1.title);
+
+    context.adapters.supabase.issue.findSimilarIssues = jest.fn<typeof context.adapters.supabase.issue.findSimilarIssues>().mockResolvedValue([]);
+    context.adapters.supabase.issue.createIssue = jest.fn(async () => {
+      createIssue(
+        markdownLinkIssue1.issue_body,
+        "markdown1",
+        markdownLinkIssue1.title,
+        7,
+        { login: "test", id: 1 },
+        "open",
+        null,
+        STRINGS.TEST_REPO,
+        STRINGS.USER_1
+      );
+    });
+
+    await runPlugin(context);
+
+    const { context: context2 } = createContextIssues(markdownLinkIssue1.issue_body, "markdown2", 8, markdownLinkIssue1.title);
+    context2.adapters.supabase.issue.findSimilarIssues = jest
+      .fn<typeof context2.adapters.supabase.issue.findSimilarIssues>()
+      .mockResolvedValue([{ issue_id: "markdown1", similarity: 0.8 }] as unknown as IssueSimilaritySearchResult[]);
+
+    context2.octokit.graphql = jest.fn<typeof context2.octokit.graphql>().mockResolvedValue({
+      node: {
+        title: markdownLinkIssue1.title,
+        url: STRINGS.ISSUE_URL,
+        number: 7,
+        body: markdownLinkIssue1.issue_body,
+        repository: {
+          name: STRINGS.TEST_REPO,
+          owner: {
+            login: STRINGS.USER_1,
+          },
+        },
+      },
+    }) as unknown as typeof context2.octokit.graphql;
+
+    context2.adapters.supabase.issue.createIssue = jest.fn(async () => {
+      createIssue(
+        markdownLinkIssue1.issue_body,
+        "markdown2",
+        markdownLinkIssue1.title,
+        8,
+        { login: "test", id: 1 },
+        "open",
+        null,
+        STRINGS.TEST_REPO,
+        STRINGS.USER_1
+      );
+    });
+
+    context2.octokit.rest.issues.update = jest.fn(async (params: { owner: string; repo: string; issue_number: number; body: string }) => {
+      // The footnote should be added after the entire line containing the markdown link
+      db.issue.update({
+        where: {
+          number: { equals: params.issue_number },
+        },
+        data: {
+          body: params.body,
+        },
+      });
+    }) as unknown as typeof octokit.rest.issues.update;
+
+    await runPlugin(context2);
+
+    const issue = db.issue.findFirst({ where: { node_id: { equals: "markdown2" } } }) as unknown as Context["payload"]["issue"];
+    expect(issue.state).toBe("open");
+    // Verify the footnote is added after the line containing the markdown link
+    expect(issue.body).toContain(
+      "_Originally posted by @0x4007 in https://www.github.com/ubiquity-os-marketplace/command-start-stop/issues/100#issuecomment-2535532258_ [^01^]"
+    );
+    // Verify the markdown link is not broken
+    expect(issue.body).not.toContain(
+      "_Originally posted by @0x4007 in https://www.github.com/ubiquity-os-marketplace/command-start-stop/issues/100#issuecomment-2535532258_[^01^]"
+    );
+  });
+
   function createContext(
     commentBody: string = "Hello, world!",
     repoId: number = 1,

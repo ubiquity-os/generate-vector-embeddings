@@ -165,7 +165,8 @@ async function handleSimilarIssuesComment(
     const { sentence } = issue.mostSimilarSentence;
     // Insert footnote reference in the body
     const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
-    updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
+    updatedBody = updatedBody.replace(sentencePattern, `${sentence} ${footnoteRef}`);
+
     // Initialize footnotes array if not already done
     if (!footnotes) {
       footnotes = [];
