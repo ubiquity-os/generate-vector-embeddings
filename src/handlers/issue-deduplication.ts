@@ -162,25 +162,11 @@ async function handleSimilarIssuesComment(
     const footnoteIndex = highestFootnoteIndex + index + 1; // Continue numbering from the highest existing footnote number
     const footnoteRef = `[^0${footnoteIndex}^]`;
     const modifiedUrl = issue.node.url.replace("https://github.com", "https://www.github.com");
-    let { sentence } = issue.mostSimilarSentence;
-    // Insert footnote reference after markdown links
-
-    if (issue.node.title !== "Task Limit Improvements") {
-      return;
-    } else {
-      sentence = "Originally posted by @0x4007 in ubiquity-os-marketplace/command-start-stop#100 (comment)";
-    }
-
-    const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const { sentence } = issue.mostSimilarSentence;
+    // Insert footnote reference in the body
     const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
+    updatedBody = updatedBody.replace(sentencePattern, `${sentence} ${footnoteRef}`);
 
-    // If the sentence contains a markdown link, add the footnote after the link with a space
-    if (sentence.match(markdownLinkPattern)) {
-      updatedBody = updatedBody.replace(markdownLinkPattern, `$& ${footnoteRef}`);
-    } else {
-      // Otherwise add footnote after the sentence as before
-      updatedBody = updatedBody.replace(sentencePattern, `${sentence}${footnoteRef}`);
-    }
     // Initialize footnotes array if not already done
     if (!footnotes) {
       footnotes = [];
@@ -321,7 +307,7 @@ export function removeFootnotes(content: string): string {
 }
 
 export function removeCautionMessages(content: string): string {
-  const cautionRegex = />[!CAUTION]\n> This issue may be a duplicate of the following issues:\n((> - \[[^\]]+]\([^)]+\)\n)+)/g;
+  const cautionRegex = />[!CAUTION]\n> This issue may be a duplicate of the following issues:\n((> - \[[^\]]+\]\([^)]+\)\n)+)/g;
   return content.replace(cautionRegex, "");
 }
 
