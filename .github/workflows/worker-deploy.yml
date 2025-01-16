@@ -15,7 +15,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
-    environment: ${{ github.ref == 'refs/heads/main' && 'main' || 'development' }}
+    environment: ${{ (github.ref == 'refs/heads/main' || github.event.workflow_run.head_branch == 'main') && 'main' || 'development' }}
     permissions:
       contents: write
 
