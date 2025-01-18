@@ -2,12 +2,12 @@ import { Context } from "../types";
 import { Comment } from "../types/comment";
 import { processSimilarIssues, IssueGraphqlResponse } from "./issue-deduplication";
 
-export async function annotate(context: Context, commentId: string, scope: string) {
+export async function annotate(context: Context, commentId: string | null, scope: string) {
   const { logger, octokit, payload } = context;
 
   const repository = payload.repository;
 
-  if (commentId === "") {
+  if (!commentId) {
     const response = await octokit.rest.issues.listComments({
       owner: repository.owner.login,
       repo: repository.name,
@@ -138,7 +138,7 @@ export function checkIfAnnotateFootNoteExists(content: string): boolean {
 }
 
 /**
- * Removes all footnotes from the comment content.
+ * Removes annotate footnotes from the comment content.
  * This includes both the footnote references in the body and the footnote definitions at the bottom.
  * @param content The content of the comment
  * @returns The content without footnotes

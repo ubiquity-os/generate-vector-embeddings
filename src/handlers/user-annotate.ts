@@ -13,9 +13,9 @@ export async function commandHandler(context: Context) {
   }
 
   if (context.command.name === "annotate") {
-    const commentUrl = context.command.parameters.commentUrl ?? "";
+    const commentUrl = context.command.parameters.commentUrl ?? null;
     const scope = context.command.parameters.scope ?? "org";
-    if (commentUrl !== "") {
+    if (commentUrl) {
       const commentRegex = /#issuecomment-(\d+)$/;
       const match = commentUrl.match(commentRegex);
       if (!match) {
@@ -33,7 +33,7 @@ export async function userAnnotate(context: Context<"issue_comment.created">) {
   const splitComment = comment.body.trim().split(" ");
   const commandName = splitComment[0].replace("/", "");
 
-  let commentId = "";
+  let commentId = null;
   let scope = "org";
 
   if (commandName === "annotate") {
