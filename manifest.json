@@ -8,7 +8,8 @@
     "issues.opened",
     "issues.edited",
     "issues.deleted",
-    "issues.labeled"
+    "issues.labeled",
+    "issues.closed"
   ],
   "configuration": {
     "default": {},
@@ -25,7 +26,12 @@
       "jobMatchingThreshold": {
         "default": 0.75,
         "type": "number"
+      },
+      "alwaysRecommend": {
+        "default": 0,
+        "type": "number"
       }
     }
-  }
+  },
+  "homepage_url": "https://ubiquity-os-comment-vector-embeddings-development.ubiquity.workers.dev"
 }

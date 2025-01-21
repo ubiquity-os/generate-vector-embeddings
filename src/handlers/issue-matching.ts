@@ -27,9 +27,8 @@ export interface IssueGraphqlResponse {
 
 /**
  * Checks if the current issue is a duplicate of an existing issue.
- * If a similar issue is found, a comment is added to the current issue.
+ * If a similar completed issue is found, it will add a comment to the issue with the assignee(s) of the similar issue.
  * @param context The context object
- * @returns True if a similar issue is found, false otherwise
  **/
 export async function issueMatching(context: Context<"issues.opened" | "issues.edited" | "issues.labeled">) {
   const {
@@ -42,11 +41,16 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
   const issueContent = issue.body + issue.title;
   const commentStart = ">The following contributors may be suitable for this task:";
   const matchResultArray: Map<string, Array<string>> = new Map();
-  const similarIssues = await supabase.issue.findSimilarIssues({
+
+  // If alwaysRecommend is enabled, use a lower threshold to ensure we get enough recommendations
+  const threshold = context.config.alwaysRecommend && context.config.alwaysRecommend > 0 ? 0 : context.config.jobMatchingThreshold;
+
+  const similarIssues = await supabase.issue.findSimilarIssuesToMatch({
     markdown: issueContent,
-    threshold: context.config.jobMatchingThreshold,
+    threshold: threshold,
     currentId: issue.node_id,
   });
+
   if (similarIssues && similarIssues.length > 0) {
     similarIssues.sort((a: IssueSimilaritySearchResult, b: IssueSimilaritySearchResult) => b.similarity - a.similarity); // Sort by similarity
     const fetchPromises = similarIssues.map(async (issue: IssueSimilaritySearchResult) => {
@@ -87,8 +91,15 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
         return null;
       }
     });
-    const issueList = (await Promise.all(fetchPromises)).filter((issue) => issue !== null);
-    issueList.forEach((issue: IssueGraphqlResponse) => {
+    const issueList = await Promise.allSettled(fetchPromises);
+
+    logger.debug("Fetched similar issues", { issueList });
+    issueList.forEach((issuePromise: PromiseSettledResult<IssueGraphqlResponse | null>) => {
+      if (!issuePromise || issuePromise.status === "rejected") {
+        return;
+      }
+      const issue = issuePromise.value as IssueGraphqlResponse;
+      // Only use completed issues that have assignees
       if (issue.node.closed && issue.node.stateReason === "COMPLETED" && issue.node.assignees.nodes.length > 0) {
         const assignees = issue.node.assignees.nodes;
         assignees.forEach((assignee: { login: string; url: string }) => {
@@ -108,6 +119,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
         });
       }
     });
+
     // Fetch if any previous comment exists
     const listIssues: RestEndpointMethodTypes["issues"]["listComments"]["response"] = await octokit.rest.issues.listComments({
       owner: payload.repository.owner.login,
@@ -116,8 +128,10 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     });
     //Check if the comment already exists
     const existingComment = listIssues.data.find((comment) => comment.body && comment.body.includes(">[!NOTE]" + "\n" + commentStart));
-    //Check if matchResultArray is empty
-    if (matchResultArray && matchResultArray.size === 0) {
+
+    logger.debug("Matched issues", { matchResultArray, length: matchResultArray.size });
+
+    if (matchResultArray.size === 0) {
       if (existingComment) {
         // If the comment already exists, delete it
         await octokit.rest.issues.deleteComment({
@@ -126,10 +140,29 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
           comment_id: existingComment.id,
         });
       }
-      logger.debug("No similar issues found");
+      logger.debug("No suitable contributors found");
       return;
     }
-    const comment = commentBuilder(matchResultArray);
+
+    // Convert Map to array and sort by highest similarity
+    const sortedContributors = Array.from(matchResultArray.entries())
+      .map(([login, matches]) => ({
+        login,
+        matches,
+        maxSimilarity: Math.max(...matches.map((match) => parseInt(match.match(/`(\d+)% Match`/)?.[1] || "0"))),
+      }))
+      .sort((a, b) => b.maxSimilarity - a.maxSimilarity);
+
+    logger.debug("Sorted contributors", { sortedContributors });
+
+    // Use alwaysRecommend if specified
+    const numToShow = context.config.alwaysRecommend || 3;
+    const limitedContributors = new Map(sortedContributors.slice(0, numToShow).map(({ login, matches }) => [login, matches]));
+
+    const comment = commentBuilder(limitedContributors);
+
+    logger.debug("Comment to be added", { comment });
+
     if (existingComment) {
       await context.octokit.rest.issues.updateComment({
         owner: payload.repository.owner.login,
@@ -147,7 +180,7 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
     }
   }
 
-  logger.ok(`Exiting issueMatching handler!`, { similarIssues: similarIssues || "No similar issues found" });
+  logger.info(`Exiting issueMatching handler!`, { similarIssues: similarIssues || "No similar issues found" });
 }
 
 /**
