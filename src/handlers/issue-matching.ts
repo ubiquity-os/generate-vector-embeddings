@@ -95,14 +95,10 @@ export async function issueMatching(context: Context<"issues.opened" | "issues.e
 
     logger.debug("Fetched similar issues", { issueList });
     issueList.forEach((issuePromise: PromiseSettledResult<IssueGraphqlResponse | null>) => {
-      if (!issuePromise || issuePromise.status === "rejected") {
+      if (!issuePromise || issuePromise.status === "rejected" || !issuePromise.value) {
         return;
       }
-      const issue = issuePromise.value;
-      // Skip if issue is null or doesn't have required properties
-      if (!issue?.node?.closed || !issue.node.stateReason || !issue.node.assignees?.nodes) {
-        return;
-      }
+      const issue = issuePromise.value as IssueGraphqlResponse;
       // Only use completed issues that have assignees
       if (issue.node.closed && issue.node.stateReason === "COMPLETED" && issue.node.assignees.nodes.length > 0) {
         const assignees = issue.node.assignees.nodes;
