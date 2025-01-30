@@ -94,7 +94,7 @@ async function handleSimilarIssuesComment(
   const existingFootnotes = commentBody.match(footnoteRegex) || [];
   const highestFootnoteIndex = existingFootnotes.length > 0 ? Math.max(...existingFootnotes.map((fn) => parseInt(fn.match(/\d+/)?.[0] ?? "0"))) : 0;
   let updatedBody = commentBody;
-  let footnotes: string[] | undefined;
+  const footnotes: string[] = [];
   // Sort relevant issues by similarity in ascending order
   issueList.sort((a, b) => parseFloat(a.similarity) - parseFloat(b.similarity));
   issueList.forEach((issue, index) => {
@@ -106,15 +106,11 @@ async function handleSimilarIssuesComment(
     const sentencePattern = new RegExp(`${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
     updatedBody = updatedBody.replace(sentencePattern, `${sentence} ${footnoteRef}`);
 
-    // Initialize footnotes array if not already done
-    if (!footnotes) {
-      footnotes = [];
-    }
     // Add new footnote to the array
     footnotes.push(`${footnoteRef}: ${issue.similarity}% similar to issue: [${issue.node.title}](${modifiedUrl}#${issue.node.number})\n\n`);
   });
   // Append new footnotes to the body, keeping the previous ones
-  if (footnotes) {
+  if (footnotes.length > 0) {
     updatedBody += "\n\n" + footnotes.join("");
   }
   // Update the comment with the modified body
