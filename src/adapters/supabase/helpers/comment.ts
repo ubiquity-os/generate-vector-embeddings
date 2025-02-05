@@ -12,7 +12,7 @@ export interface CommentType {
   embedding: number[];
 }
 
-interface CommentData {
+export interface CommentData {
   markdown: string | null;
   id: string;
   author_id: number;

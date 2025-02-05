@@ -8,7 +8,8 @@
     "issues.opened",
     "issues.edited",
     "issues.deleted",
-    "issues.labeled"
+    "issues.labeled",
+    "issues.closed"
   ],
   "configuration": {
     "default": {},
@@ -28,7 +29,12 @@
         "default": 0.75,
         "description": "The minimum similarity score when considering users to be suitable for a job.",
         "type": "number"
+      },
+      "alwaysRecommend": {
+        "default": 0,
+        "type": "number"
       }
     }
-  }
+  },
+  "homepage_url": "https://ubiquity-os-comment-vector-embeddings-development.ubiquity.workers.dev"
 }

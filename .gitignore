@@ -18,3 +18,5 @@ cypress/screenshots
 script.ts
 .wrangler
 test-dashboard.md
+auth.users.json
+*.code-workspace

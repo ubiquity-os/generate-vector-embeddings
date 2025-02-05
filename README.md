@@ -24,8 +24,8 @@ This is a plugin for [Ubiquibot](https://github.com/ubiquity-os/ubiquity-os-kern
 
 ## Testing Locally
 
-- Run `yarn install` to install the dependencies.
-- Run `yarn worker` to start the server.
+- Run `bun install` to install the dependencies.
+- Run `bun worker` to start the server.
 - Make HTTP requests to the server to test the plugin with content type `Application/JSON`
 
 ```
@@ -62,4 +62,4 @@ This is a plugin for [Ubiquibot](https://github.com/ubiquity-os/ubiquity-os-kern
 
 ## Testing
 
-- Run `yarn test` to run the tests.
+- Run `bun run test` to run the tests.
