@@ -22,7 +22,7 @@
       },
       "warningThreshold": {
         "default": 0.75,
-        "description": "",
+        "description": "Issues above this similarity score will be marked as a potential duplicate",
         "type": "number"
       },
       "jobMatchingThreshold": {
@@ -32,6 +32,7 @@
       },
       "alwaysRecommend": {
         "default": 0,
+        "description": "If set to a value greater than 0, the bot will always recommend contributors, regardless of the similarity score.",
         "type": "number"
       }
     }
